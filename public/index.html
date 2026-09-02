@@ -123,11 +123,14 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 
 <div id="gate" hidden>
   <h1>Deal Board</h1>
-  <p>Transworld Business Advisors of Florida · ZenaTech buy-side mandate</p>
-  <p style="font-size:13px">Enter your work email. You'll get a sign-in link — no password.
-     Only invited addresses can get in.</p>
-  <input id="email" type="email" placeholder="you@yourfirm.com" autocomplete="email">
-  <button id="send">Send me a sign-in link</button>
+  <p>Transworld Business Advisors of Florida &middot; ZenaTech buy-side mandate</p>
+  <p style="font-size:13px">Only the three invited work addresses can get in.
+     First time here? Enter your email, pick a password, and press
+     <b>Set my password</b>.</p>
+  <input id="email" type="email" placeholder="you@tworld.com" autocomplete="username">
+  <input id="pw" type="password" placeholder="password" autocomplete="current-password">
+  <button id="signin">Sign in</button>
+  <button id="signup" style="background:#fff;color:var(--green);border:1px solid var(--green);margin-top:8px">Set my password (first time)</button>
   <div id="gatemsg"></div>
 </div>
 
@@ -213,18 +216,46 @@ function showGate(msg, kind) {
   if (msg) $("#gatemsg").innerHTML = '<div class="msg ' + (kind || "err") + '">' + esc(msg) + "</div>";
 }
 
-$("#send").addEventListener("click", function () {
-  var email = $("#email").value.trim();
-  if (!email) { showGate("Enter your email address.", "err"); return; }
-  this.disabled = true;
-  sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.href.split("#")[0] } })
-    .then(function (r) {
-      $("#send").disabled = false;
-      if (r.error) { showGate(r.error.message, "err"); return; }
-      showGate("Check your email. The link signs you straight in and lasts one hour.", "ok");
-    });
+function creds() {
+  return { email: $("#email").value.trim(), password: $("#pw").value };
+}
+function gateBusy(on) {
+  $("#signin").disabled = on; $("#signup").disabled = on;
+}
+
+$("#signin").addEventListener("click", function () {
+  var c = creds();
+  if (!c.email || !c.password) { showGate("Enter your email and password.", "err"); return; }
+  gateBusy(true);
+  sb.auth.signInWithPassword(c).then(function (r) {
+    gateBusy(false);
+    if (r.error) {
+      showGate(r.error.message === "Invalid login credentials"
+        ? "That email and password did not match. If this is your first time, use \u201cSet my password\u201d instead."
+        : r.error.message, "err");
+    }
+    // success is handled by onAuthStateChange
+  });
 });
-$("#email").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#send").click(); });
+
+$("#signup").addEventListener("click", function () {
+  var c = creds();
+  if (!c.email || !c.password) { showGate("Enter your email and choose a password.", "err"); return; }
+  if (c.password.length < 8) { showGate("Use at least 8 characters.", "err"); return; }
+  gateBusy(true);
+  sb.auth.signUp(c).then(function (r) {
+    gateBusy(false);
+    if (!r.error) return;                       // signed in via onAuthStateChange
+    if (/already registered/i.test(r.error.message)) {
+      showGate("That address already has a password. Use Sign in, or ask Jason to reset it.", "err");
+    } else {
+      showGate(r.error.message, "err");
+    }
+  });
+});
+
+$("#pw").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#signin").click(); });
+$("#email").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#pw").focus(); });
 document.addEventListener("click", function (e) {
   if (e.target && e.target.id === "signout") sb.auth.signOut().then(function () { location.reload(); });
 });
@@ -485,15 +516,6 @@ function boot() {
   sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
     auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
   });
-
-  // If the link itself carried an error, say so instead of silently returning
-  // to the sign-in box.
-  var h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
-  if (h.get("error_description") || h.get("error")) {
-    showGate(h.get("error_description") || h.get("error"), "err");
-    history.replaceState({}, "", location.pathname);
-    return;
-  }
 
   var started = false;
   function go(session) {
