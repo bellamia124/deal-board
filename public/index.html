@@ -110,6 +110,15 @@ details.log summary{cursor:pointer;color:var(--mute);font-size:12px}
 details.log ul{margin:6px 0 0;padding-left:16px}
 details.log li{margin-bottom:2px}
 details.log .t{color:var(--faint)}
+.note{background:var(--wash);border:1px solid var(--line);padding:11px 14px;
+ font-size:14px;color:var(--grey);margin:14px 0}
+.slack{background:var(--card);border:1px solid var(--line);
+ border-left:5px solid #4A154B;padding:12px 16px;margin:8px 0}
+.slack.done{opacity:.5}
+.slack.done .txt{text-decoration:line-through}
+.slack .meta{color:var(--mute);font-size:12.5px;margin-top:4px}
+.slack .meta a{color:var(--green)}
+.slack .b{margin-top:8px}
 .empty{background:var(--wash);border:1px solid var(--line);padding:14px 16px;
  color:var(--grey);font-size:14px}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
@@ -146,6 +155,13 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
   <div class="tiles" id="tiles"></div>
 
   <div class="board">
+    <div class="row" style="margin-bottom:7px">
+      <button class="chip tierchip" data-tier="1">Today's calls<span class="k" id="t-1">0</span></button>
+      <button class="chip tierchip" data-tier="2">Tier 2<span class="k" id="t-2">0</span></button>
+      <button class="chip tierchip" data-tier="3">Tier 3<span class="k" id="t-3">0</span></button>
+      <span class="gap"></span>
+      <button class="chip" id="slacktoggle">From Slack<span class="k" id="t-slack">0</span></button>
+    </div>
     <div class="row">
       <button class="chip" data-view="all">Everything<span class="k" id="n-all">0</span></button>
       <button class="chip" data-view="mine">Mine<span class="k" id="n-mine">0</span></button>
@@ -158,6 +174,8 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
     <div class="row" id="states" style="margin-top:7px"></div>
   </div>
 
+  <div id="slackpanel" hidden></div>
+  <div id="tierblurb" class="note" hidden></div>
   <div id="list"></div>
   <footer id="foot"></footer>
 </div>
@@ -207,8 +225,16 @@ var STATUSES = [
 ];
 var CLOSED = { "Not for sale": 1, "Do not call": 1 };
 
-var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {},
-    view = "all", stateFilter = "ALL", q = "";
+var SLACK_STATUSES = [
+  ["Working",  "Working",  false],
+  ["Waiting",  "Waiting on them", false],
+  ["Done",     "Done",     true ],
+  ["Dropped",  "Dropped",  true ]
+];
+var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
+
+var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {},
+    view = "all", stateFilter = "ALL", tier = 1, q = "";
 
 // ---------------------------------------------------------------- sign in
 function showGate(msg, kind) {
@@ -261,20 +287,42 @@ document.addEventListener("click", function (e) {
 });
 
 // ---------------------------------------------------------------- loading
+// PostgREST caps a single read at 1000 rows. The list is past that now, so
+// every table is paged until a short page comes back. Without this the board
+// would silently show the first thousand firms and look complete.
+function fetchAll(table, order, asc) {
+  var out = [], size = 1000;
+  function page(from) {
+    var q = sb.from(table).select("*");
+    if (order) q = q.order(order, { ascending: !!asc });
+    return q.range(from, from + size - 1).then(function (r) {
+      if (r.error) throw r.error;
+      out = out.concat(r.data || []);
+      if ((r.data || []).length < size) return out;
+      return page(from + size);
+    });
+  }
+  return page(0);
+}
+
 function load() {
   return Promise.all([
     sb.from("team").select("*").eq("active", true),
-    sb.from("firms").select("*").order("score", { ascending: false }),
-    sb.from("work").select("*"),
-    sb.from("activity").select("*").order("at", { ascending: true })
+    fetchAll("firms", "score", false),
+    fetchAll("work"),
+    fetchAll("activity", "at", true),
+    sb.from("slack_actions").select("*").order("id"),
+    fetchAll("slack_activity", "at", true)
   ]).then(function (r) {
-    var bad = r.filter(function (x) { return x.error; });
-    if (bad.length) throw bad[0].error;
+    if (r[0].error) throw r[0].error;
     team  = r[0].data || [];
-    FIRMS = r[1].data || [];
-    WORK  = {}; (r[2].data || []).forEach(function (w) { WORK[w.firm_id] = w; });
-    LOG   = {}; (r[3].data || []).forEach(function (a) {
+    FIRMS = r[1];
+    WORK  = {}; r[2].forEach(function (w) { WORK[w.firm_id] = w; });
+    LOG   = {}; r[3].forEach(function (a) {
       (LOG[a.firm_id] = LOG[a.firm_id] || []).push(a); });
+    SLACK = (r[4] && r[4].data) || [];
+    SLOG  = {}; (r[5] || []).forEach(function (a) {
+      (SLOG[a.action_id] = SLOG[a.action_id] || []).push(a); });
   });
 }
 
@@ -284,6 +332,13 @@ function subscribe() {
       if (p.eventType === "DELETE") delete WORK[p.old.firm_id];
       else WORK[p.new.firm_id] = p.new;
       renderOne(p.new ? p.new.firm_id : p.old.firm_id); counts();
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "slack_activity" }, function (p) {
+      (SLOG[p.new.action_id] = SLOG[p.new.action_id] || []).push(p.new); paintSlack();
+    })
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "slack_actions" }, function (p) {
+      for (var i = 0; i < SLACK.length; i++) if (SLACK[i].id === p.new.id) SLACK[i] = p.new;
+      paintSlack(); counts();
     })
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity" }, function (p) {
       var a = p.new; (LOG[a.firm_id] = LOG[a.firm_id] || []).push(a); renderOne(a.firm_id);
@@ -323,6 +378,7 @@ function saveWork(fid, patch, what, note) {
 // ---------------------------------------------------------------- rendering
 function visible(f) {
   var w = WORK[f.firm_id] || {};
+  if ((f.tier || 1) !== tier) return false;
   if (q) {
     var hay = (f.company + " " + f.city + " " + f.principal + " " + f.state).toLowerCase();
     if (hay.indexOf(q) < 0) return false;
@@ -413,6 +469,12 @@ function renderOne(fid) {
 
 function render() {
   var shown = FIRMS.filter(visible);
+  // Tier 2 runs to about 1,750 names. Drawing every card at once takes seconds
+  // and makes the page feel broken, so the highest-scoring 400 are drawn and
+  // the rest are reachable by picking a state or searching. Say so plainly
+  // rather than letting it look like the list simply ends.
+  var CAP = 400, capped = 0;
+  if (shown.length > CAP) { capped = shown.length - CAP; shown = shown.slice(0, CAP); }
   var by = {};
   shown.forEach(function (f) { (by[f.state || "??"] = by[f.state || "??"] || []).push(f); });
   var order = Object.keys(by).sort(function (a, b) { return by[b].length - by[a].length; });
@@ -421,17 +483,126 @@ function render() {
       '<span class="k">' + by[st].length + " showing</span></h3>" +
       by[st].map(card).join("");
   }).join("");
-  $("#list").innerHTML = h ||
-    '<div class="empty">Nothing matches. Try <b>Everything</b>, or clear the search box.</div>';
+  $("#list").innerHTML = (h || 
+    '<div class="empty">Nothing matches. Try <b>Everything</b>, or clear the search box.</div>') +
+    (capped ? '<div class="note"><b>' + capped.toLocaleString() + ' more not shown.</b> ' +
+      'The highest-scoring 400 are drawn so the page stays quick \u2014 pick a state ' +
+      'above, or search, to reach the rest.</div>' : "");
+  var bl = $("#tierblurb");
+  bl.textContent = BLURB[tier] || ""; bl.hidden = !BLURB[tier];
+  $$(".tierchip").forEach(function (c) {
+    c.classList.toggle("on", Number(c.dataset.tier) === tier); });
   $$("#states .chip").forEach(function (c) {
     c.classList.toggle("on", c.dataset.st === stateFilter); });
   $$(".board [data-view]").forEach(function (c) {
     c.classList.toggle("on", c.dataset.view === view); });
 }
 
+var BLURB = {
+  1: "Tier 1 \u2014 surveying and civil engineering. This is the work. The ones " +
+     "reading Civil engineering + land surveying do both, and that is the shape " +
+     "ZenaTech buys. Best hours 7:00\u20138:15 am and 4:30\u20136:00 pm.",
+  2: "Tier 2 \u2014 proven adjacent buys: building inspection, power and pressure " +
+     "washing, testing labs, specialty exterior trades, and flight schools. " +
+     "ZenaTech has bought in every one of these lines. Work these after tier 1, " +
+     "not instead of it. Flight schools are Matt's and nobody else's.",
+  3: "Tier 3 \u2014 a watch list, not a call list. Found by company name only, so " +
+     "look the business up before you spend a call on it."
+};
+
+function saveSlack(id, patch, what, note) {
+  var row = SLACK.filter(function (a) { return a.id === id; })[0];
+  if (!row) return;
+  Object.keys(patch).forEach(function (k) { row[k] = patch[k]; });
+  row.updated_at = new Date().toISOString();
+  row.updated_by = me.email;
+  if (what) {
+    (SLOG[id] = SLOG[id] || []).push({
+      action_id: id, at: row.updated_at, by_email: me.email, what: what, note: note || null });
+  }
+  paintSlack(); counts();
+  var body = {};
+  Object.keys(patch).forEach(function (k) { body[k] = patch[k]; });
+  body.updated_at = row.updated_at; body.updated_by = me.email;
+  sb.from("slack_actions").update(body).eq("id", id).then(function (r) {
+    if (r.error) { toast("Not saved: " + r.error.message); return; }
+    if (what) {
+      sb.from("slack_activity").insert({
+        action_id: id, by_email: me.email, what: what, note: note || null
+      }).then(function (r2) {
+        if (r2.error) toast("Saved, but the history line did not: " + r2.error.message);
+      });
+    }
+  });
+}
+
+function slackCard(a) {
+  var log = SLOG[a.id] || [];
+  var closed = !!SLACK_CLOSED[a.status];
+  var txt = a.link
+    ? '<a href="' + esc(a.link) + '" target="_blank" rel="noopener">' + esc(a.item) + "</a>"
+    : esc(a.item);
+
+  var owner = a.owner_email
+    ? '<span class="owner' + (a.owner_email === me.email ? " mine" : "") + '">' +
+      esc(nameOf(a.owner_email)) + "</span>"
+    : '<span class="owner none">unclaimed</span>';
+
+  var opts = ['<option value="">assign to\u2026</option>'].concat(team.map(function (t) {
+    return '<option value="' + esc(t.email) + '"' +
+      (a.owner_email === t.email ? " selected" : "") + ">" + esc(t.full_name) + "</option>";
+  })).join("");
+
+  var btns = SLACK_STATUSES.map(function (st) {
+    return '<button class="b' + (st[2] ? " bad" : "") + (a.status === st[0] ? " on" : "") +
+      '" data-sstatus="' + esc(st[0]) + '">' + esc(st[1]) + "</button>";
+  }).join("");
+
+  var dueTxt = "", dueCls = "due";
+  if (a.next_date) {
+    var late = a.next_date <= today();
+    dueTxt = (late ? "due " : "scheduled ") + a.next_date;
+    if (!late) dueCls = "due ok";
+  }
+
+  var hist = log.length
+    ? log.slice().reverse().map(function (e) {
+        return "<li><span class='t'>" + esc(when(e.at)) + "</span> \u2014 <b>" +
+          esc(nameOf(e.by_email)) + "</b> " + esc(e.what) +
+          (e.note ? ": " + esc(e.note) : "") + "</li>"; }).join("")
+    : "<li class='t'>Nothing recorded yet.</li>";
+
+  return '<div class="slack' + (closed ? " done" : "") + '" data-slack="' + a.id + '">' +
+    '<div class="txt">' + txt + "</div>" +
+    '<div class="meta">' + esc(a.who || "") + " &middot; " + esc(a.channel || "") +
+      " &middot; " + esc(a.when_said || "") + "</div>" +
+    '<div class="ctl">' + owner +
+      '<select data-sassign>' + opts + "</select>" + btns + "</div>" +
+    '<div class="ctl"><label style="font-size:12px;color:var(--mute)">Next</label>' +
+      '<input type="date" data-sdate value="' + esc(a.next_date || "") + '">' +
+      '<input type="text" data-snote placeholder="what happens next" value="' +
+        esc(a.next_note || "") + '">' +
+      '<button class="b" data-ssave>Set</button>' +
+      '<span class="' + dueCls + '">' + esc(dueTxt) + "</span></div>" +
+    '<details class="log"><summary>Activity' + (log.length ? " (" + log.length + ")" : "") +
+      "</summary><ul>" + hist + "</ul></details></div>";
+}
+
+function slackHtml() {
+  if (!SLACK.length) return "";
+  return SLACK.map(slackCard).join("");
+}
+
+function paintSlack() {
+  var panel = $("#slackpanel");
+  if (panel && !panel.hidden) panel.innerHTML = slackHtml() ||
+    '<div class="empty">Nothing open from Slack.</div>';
+}
+
 function counts() {
   var n = { all: 0, mine: 0, free: 0, due: 0, worked: 0 };
   FIRMS.forEach(function (f) {
+    if ((f.tier || 1) !== tier) return;
     var w = WORK[f.firm_id] || {};
     if (!CLOSED[w.status]) n.all++;
     if (w.owner_email === me.email) n.mine++;
@@ -440,6 +611,16 @@ function counts() {
     if (w.status && w.status !== "Not started") n.worked++;
   });
   Object.keys(n).forEach(function (k) { var e = $("#n-" + k); if (e) e.textContent = n[k]; });
+  [1, 2, 3].forEach(function (t) {
+    var e = $("#t-" + t);
+    if (e) e.textContent = FIRMS.filter(function (f) { return (f.tier || 1) === t; }).length;
+  });
+  var open = SLACK.filter(function (a) { return !SLACK_CLOSED[a.status]; }).length;
+  var sdue = SLACK.filter(function (a) {
+    return a.next_date && a.next_date <= today() && !SLACK_CLOSED[a.status]; }).length;
+  if (sdue) open = open + "\u00a0\u00b7\u00a0" + sdue + " due";
+  var se = $("#t-slack"); if (se) se.textContent = open;
+  var st = $("#slacktoggle"); if (st) st.style.color = open ? "var(--red)" : "";
 
   var acute = FIRMS.filter(function (f) { return f.priority === "ACUTE"; }).length;
   var dual  = FIRMS.filter(function (f) { return (f.line_of_work || "").indexOf("+") > -1; }).length;
@@ -457,7 +638,9 @@ function tile(v, l, hot) {
 
 function stateChips() {
   var c = {};
-  FIRMS.forEach(function (f) { c[f.state] = (c[f.state] || 0) + 1; });
+  FIRMS.forEach(function (f) {
+    if ((f.tier || 1) !== tier) return;
+    c[f.state] = (c[f.state] || 0) + 1; });
   var keys = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; });
   $("#states").innerHTML = '<button class="chip on" data-st="ALL">All states</button>' +
     keys.map(function (s) {
@@ -468,6 +651,36 @@ function stateChips() {
 // ---------------------------------------------------------------- events
 document.addEventListener("click", function (e) {
   var t = e.target;
+  if (t.dataset && t.dataset.tier) {
+    tier = Number(t.dataset.tier); stateFilter = "ALL"; stateChips(); render(); counts(); return; }
+  if (t.id === "slacktoggle") {
+    var panel = $("#slackpanel");
+    panel.hidden = !panel.hidden;
+    paintSlack();
+    t.classList.toggle("on", !panel.hidden);
+    return;
+  }
+  var scard = t.closest && t.closest(".slack");
+  if (scard) {
+    var sid = Number(scard.dataset.slack);
+    if (!me) { toast("Sign in first."); return; }
+    if (t.dataset.sstatus !== undefined) {
+      var cur = (SLACK.filter(function (a) { return a.id === sid; })[0] || {}).status;
+      var next = cur === t.dataset.sstatus ? "Open" : t.dataset.sstatus;
+      var patch = { status: next };
+      var row0 = SLACK.filter(function (a) { return a.id === sid; })[0];
+      if (row0 && !row0.owner_email) patch.owner_email = me.email;
+      saveSlack(sid, patch, next === "Open" ? "reopened it" : next.toLowerCase());
+      return;
+    }
+    if (t.dataset.ssave !== undefined) {
+      var d = $("[data-sdate]", scard).value, nt = $("[data-snote]", scard).value.trim();
+      if (!d) { toast("Pick a date for the follow-up."); return; }
+      saveSlack(sid, { next_date: d, next_note: nt }, "scheduled " + d, nt);
+      toast("Follow-up set for " + d);
+      return;
+    }
+  }
   if (t.dataset && t.dataset.view) { view = t.dataset.view; render(); return; }
   if (t.dataset && t.dataset.st)   { stateFilter = t.dataset.st; render(); return; }
   var box = t.closest && t.closest(".call"); if (!box) return;
@@ -489,6 +702,14 @@ document.addEventListener("click", function (e) {
 });
 
 document.addEventListener("change", function (e) {
+  var ssel = e.target.closest && e.target.closest("[data-sassign]");
+  if (ssel) {
+    var sid = Number(ssel.closest(".slack").dataset.slack), to = ssel.value || null;
+    if (!me) { toast("Sign in first."); return; }
+    saveSlack(sid, { owner_email: to },
+      to ? (to === me.email ? "claimed it" : "assigned to " + nameOf(to)) : "unassigned");
+    return;
+  }
   var sel = e.target.closest && e.target.closest("[data-assign]"); if (!sel) return;
   var fid = sel.closest(".call").dataset.fid, to = sel.value || null;
   saveWork(fid, { owner_email: to },
@@ -526,10 +747,26 @@ function boot() {
     // present made the client try to consume an already-used token, which
     // failed quietly and dumped you back on the sign-in box.
     try { history.replaceState({}, "", location.pathname); } catch (e) {}
-    load().then(start).catch(function (err) {
-      showGate("Signed in as " + (me.email || "") + ", but the board would not load: " +
-               (err.message || err), "err");
-    });
+    // Supabase issues the token on one server and checks it on another. For a
+    // few seconds after signing in those two clocks can disagree, and the very
+    // first read comes back "JWT issued at future". It is transient: wait, get
+    // a fresh token, try again. Only a genuine failure reaches the viewer.
+    (function attempt(n) {
+      load().then(start).catch(function (err) {
+        var m = String((err && (err.message || err.msg)) || err || "");
+        if (n < 4 && /issued at future|jwt|clock|exp/i.test(m)) {
+          showGate("Signing you in\u2026 waiting for the server clock to catch up.", "ok");
+          setTimeout(function () {
+            sb.auth.refreshSession()
+              .then(function () { attempt(n + 1); })
+              .catch(function () { attempt(n + 1); });
+          }, 2500);
+          return;
+        }
+        showGate("Signed in as " + (me.email || "") + ", but the board would not load: " +
+                 m, "err");
+      });
+    })(1);
   }
 
   sb.auth.onAuthStateChange(function (evt, session) { if (session) go(session); });
