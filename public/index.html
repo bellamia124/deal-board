@@ -479,22 +479,50 @@ function start() {
 
 function boot() {
   if (!window.supabase || !CFG.SUPABASE_URL || CFG.SUPABASE_URL.indexOf("YOUR-PROJECT") > -1) {
-    showGate("This page has not been configured yet — config.js still has its placeholder values.", "err");
+    showGate("This page has not been configured yet.", "err");
     return;
   }
-  sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
-  sb.auth.getSession().then(function (r) {
-    var s = r.data && r.data.session;
-    if (!s) { showGate(); return; }
-    me = s.user;
-    load().then(start).catch(function (err) {
-      sb.auth.signOut();
-      showGate("Signed in, but this address is not on the team list. Ask Jason to add it. (" +
-        (err.message || err) + ")", "err");
-    });
+  sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
+    auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
   });
-  sb.auth.onAuthStateChange(function (evt) {
-    if (evt === "SIGNED_IN" && !me) location.reload();
+
+  // If the link itself carried an error, say so instead of silently returning
+  // to the sign-in box.
+  var h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
+  if (h.get("error_description") || h.get("error")) {
+    showGate(h.get("error_description") || h.get("error"), "err");
+    history.replaceState({}, "", location.pathname);
+    return;
+  }
+
+  var started = false;
+  function go(session) {
+    if (started || !session) return;
+    started = true;
+    me = session.user;
+    // Clear the tokens out of the address bar. Reloading with them still
+    // present made the client try to consume an already-used token, which
+    // failed quietly and dumped you back on the sign-in box.
+    try { history.replaceState({}, "", location.pathname); } catch (e) {}
+    load().then(start).catch(function (err) {
+      showGate("Signed in as " + (me.email || "") + ", but the board would not load: " +
+               (err.message || err), "err");
+    });
+  }
+
+  sb.auth.onAuthStateChange(function (evt, session) { if (session) go(session); });
+
+  // On a magic-link return the session is not ready on the first tick, so ask
+  // again before giving up.
+  sb.auth.getSession().then(function (r) {
+    var s1 = r.data && r.data.session;
+    if (s1) { go(s1); return; }
+    setTimeout(function () {
+      sb.auth.getSession().then(function (r2) {
+        var s2 = r2.data && r2.data.session;
+        if (s2) go(s2); else if (!started) showGate();
+      });
+    }, 1500);
   });
 }
 boot();
