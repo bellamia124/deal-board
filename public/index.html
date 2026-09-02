@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Deal Board — ZenaTech</title>
+<style>
+:root{
+  --green:#00461C; --gold:#9D7D4F; --ink:#14120D; --grey:#4A4A42;
+  --mute:#77776C; --faint:#A39F92; --line:#DEDBD1; --bg:#F7F6F2;
+  --card:#ffffff; --red:#8A2B20; --blue:#4A6FA5; --wash:#F0EEE7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+a{color:var(--green)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 90px}
+
+header{border-bottom:3px solid var(--green);padding:26px 0 16px}
+h1{font:600 28px/1.1 Georgia,serif;color:var(--green);margin:0 0 4px}
+.sub{color:var(--mute);font-size:13px}
+.me{float:right;font-size:13px;color:var(--grey);text-align:right}
+.me b{color:var(--green)}
+.link{background:none;border:none;color:var(--mute);font:inherit;font-size:12px;
+ text-decoration:underline;cursor:pointer;padding:0}
+
+/* ---- sign in ---- */
+#gate{max-width:430px;margin:9vh auto;background:var(--card);
+ border:1px solid var(--line);padding:34px 32px}
+#gate h1{font-size:25px;margin-bottom:6px}
+#gate p{color:var(--grey);font-size:14px}
+#gate input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);
+ margin:14px 0 12px;background:#fff}
+#gate button{width:100%;font:inherit;font-weight:600;padding:11px;border:0;
+ background:var(--green);color:#fff;cursor:pointer}
+#gate button:disabled{opacity:.5;cursor:default}
+.msg{font-size:13px;margin-top:14px;padding:10px 12px}
+.msg.ok{background:#EDF4EE;color:var(--green);border:1px solid #BFD8C6}
+.msg.err{background:#FBEFED;color:var(--red);border:1px solid #E5C4BF}
+
+/* ---- tiles ---- */
+.tiles{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 6px}
+.tile{flex:1 1 130px;background:var(--card);border:1px solid var(--line);padding:13px 15px}
+.tile .n{font:600 26px/1 Georgia,serif;color:var(--green)}
+.tile .n.hot{color:var(--red)}
+.tile .l{font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--mute);margin-top:5px}
+
+/* ---- toolbar ---- */
+.board{position:sticky;top:0;z-index:30;background:var(--bg);
+ border-bottom:1px solid var(--line);padding:10px 0 8px;margin:16px 0 6px}
+.row{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.chip{font:inherit;font-size:13px;padding:4px 11px;border:1px solid var(--line);
+ background:#fff;color:var(--grey);cursor:pointer}
+.chip:hover{border-color:var(--gold)}
+.chip.on{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+.chip .k{color:var(--faint);margin-left:6px;font-weight:400}
+.chip.on .k{color:#BFD8C6}
+.gap{flex:1}
+#search{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--line);
+ min-width:190px;background:#fff}
+
+/* ---- state sections ---- */
+h3.st{font:600 15px Georgia,serif;color:var(--green);margin:24px 0 8px;
+ padding-bottom:4px;border-bottom:1px solid var(--line)}
+h3.st .k{font:400 12px -apple-system,sans-serif;color:var(--mute);
+ letter-spacing:.05em;margin-left:8px}
+
+/* ---- cards ---- */
+.call{background:var(--card);border:1px solid var(--line);
+ border-left:5px solid var(--gold);padding:14px 18px;margin-bottom:9px}
+.call.acute{border-left-color:var(--red)}
+.call.claimed{border-left-color:var(--blue)}
+.call.closed{opacity:.55}
+.call.closed .firm{text-decoration:line-through}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:9px}
+.firm{font-weight:700;font-size:17px}
+.badge{font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+ border:1px solid currentColor;padding:1px 7px;color:var(--gold)}
+.badge.acute{color:var(--red)}
+.who{color:var(--grey);font-size:14px;margin-top:5px}
+.who .sep{color:var(--faint)}
+.tel{font-weight:700;font-family:ui-monospace,Menlo,monospace;text-decoration:none;
+ border-bottom:1px solid #BFD8C6;color:var(--green)}
+.est{color:var(--gold);font-size:12px}
+.nonum{color:var(--faint);font-style:italic}
+.addr{color:var(--mute);font-size:13px;margin-top:3px}
+.why{margin-top:8px;padding-top:8px;border-top:1px solid #EEEBE3;font-size:14px;
+ color:var(--grey)}
+
+.ctl{margin-top:10px;padding-top:9px;border-top:1px solid #EEEBE3;
+ display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ctl select,.ctl input{font:inherit;font-size:13px;padding:4px 7px;
+ border:1px solid var(--line);background:#fff;color:var(--ink)}
+.ctl input[type=text]{flex:1 1 200px;min-width:0}
+.b{font:inherit;font-size:12px;padding:4px 9px;border:1px solid var(--line);
+ background:#fff;color:var(--grey);cursor:pointer}
+.b:hover{border-color:var(--green);color:var(--green)}
+.b.on{background:var(--green);border-color:var(--green);color:#fff}
+.b.bad.on{background:var(--red);border-color:var(--red)}
+.owner{font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;
+ border:1px solid var(--blue);color:var(--blue);font-weight:600;white-space:nowrap}
+.owner.mine{background:var(--blue);color:#fff}
+.owner.none{border-color:var(--line);color:var(--faint)}
+.due{font-size:12px;color:var(--red);font-weight:600}
+.due.ok{color:var(--grey);font-weight:400}
+details.log{margin-top:8px;font-size:13px;color:var(--grey)}
+details.log summary{cursor:pointer;color:var(--mute);font-size:12px}
+details.log ul{margin:6px 0 0;padding-left:16px}
+details.log li{margin-bottom:2px}
+details.log .t{color:var(--faint)}
+.empty{background:var(--wash);border:1px solid var(--line);padding:14px 16px;
+ color:var(--grey);font-size:14px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+ background:var(--ink);color:#fff;padding:9px 17px;font-size:13px;z-index:99;display:none}
+footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
+ color:var(--mute);font-size:12px;text-align:right}
+@media (max-width:640px){.me{float:none;text-align:left;margin-top:8px}}
+</style>
+</head>
+<body>
+
+<div id="gate" hidden>
+  <h1>Deal Board</h1>
+  <p>Transworld Business Advisors of Florida · ZenaTech buy-side mandate</p>
+  <p style="font-size:13px">Enter your work email. You'll get a sign-in link — no password.
+     Only invited addresses can get in.</p>
+  <input id="email" type="email" placeholder="you@yourfirm.com" autocomplete="email">
+  <button id="send">Send me a sign-in link</button>
+  <div id="gatemsg"></div>
+</div>
+
+<div id="app" hidden>
+<div class="wrap">
+  <header>
+    <div class="me">Signed in as <b id="whoami"></b><br>
+      <button class="link" id="signout">sign out</button></div>
+    <h1>Deal Board</h1>
+    <div class="sub">ZenaTech buy-side mandate · <span id="stamp"></span></div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="board">
+    <div class="row">
+      <button class="chip" data-view="all">Everything<span class="k" id="n-all">0</span></button>
+      <button class="chip" data-view="mine">Mine<span class="k" id="n-mine">0</span></button>
+      <button class="chip" data-view="free">Unclaimed<span class="k" id="n-free">0</span></button>
+      <button class="chip" data-view="due">Due<span class="k" id="n-due">0</span></button>
+      <button class="chip" data-view="worked">Worked<span class="k" id="n-worked">0</span></button>
+      <span class="gap"></span>
+      <input id="search" type="search" placeholder="find a company, town or person">
+    </div>
+    <div class="row" id="states" style="margin-top:7px"></div>
+  </div>
+
+  <div id="list"></div>
+  <footer id="foot"></footer>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="./config.js"></script>
+<script>
+(function () {
+"use strict";
+
+var CFG = window.DEAL_BOARD_CONFIG || {};
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+
+function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+function toast(m) {
+  var t = $("#toast"); t.textContent = m; t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; }, 3400);
+}
+function today() { return new Date().toISOString().slice(0, 10); }
+function when(iso) {
+  try { var d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
+           d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  } catch (e) { return iso; }
+}
+function money(n) {
+  if (n == null || n === "") return "";
+  return "$" + Number(n).toLocaleString();
+}
+
+var STATES = { FL:"Florida", CA:"California", TX:"Texas", CO:"Colorado",
+  VA:"Virginia", AZ:"Arizona", GA:"Georgia", NC:"North Carolina",
+  SC:"South Carolina", TN:"Tennessee", WA:"Washington", OH:"Ohio" };
+
+var STATUSES = [
+  ["Calling",       "Called",        false],
+  ["No answer",     "No answer",     false],
+  ["Left voicemail","Voicemail",     false],
+  ["Call back",     "Call back",     false],
+  ["Interested",    "Interested",    false],
+  ["Not for sale",  "Not for sale",  true ],
+  ["Do not call",   "Do not call",   true ]
+];
+var CLOSED = { "Not for sale": 1, "Do not call": 1 };
+
+var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {},
+    view = "all", stateFilter = "ALL", q = "";
+
+// ---------------------------------------------------------------- sign in
+function showGate(msg, kind) {
+  $("#app").hidden = true; $("#gate").hidden = false;
+  if (msg) $("#gatemsg").innerHTML = '<div class="msg ' + (kind || "err") + '">' + esc(msg) + "</div>";
+}
+
+$("#send").addEventListener("click", function () {
+  var email = $("#email").value.trim();
+  if (!email) { showGate("Enter your email address.", "err"); return; }
+  this.disabled = true;
+  sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.href.split("#")[0] } })
+    .then(function (r) {
+      $("#send").disabled = false;
+      if (r.error) { showGate(r.error.message, "err"); return; }
+      showGate("Check your email. The link signs you straight in and lasts one hour.", "ok");
+    });
+});
+$("#email").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#send").click(); });
+document.addEventListener("click", function (e) {
+  if (e.target && e.target.id === "signout") sb.auth.signOut().then(function () { location.reload(); });
+});
+
+// ---------------------------------------------------------------- loading
+function load() {
+  return Promise.all([
+    sb.from("team").select("*").eq("active", true),
+    sb.from("firms").select("*").order("score", { ascending: false }),
+    sb.from("work").select("*"),
+    sb.from("activity").select("*").order("at", { ascending: true })
+  ]).then(function (r) {
+    var bad = r.filter(function (x) { return x.error; });
+    if (bad.length) throw bad[0].error;
+    team  = r[0].data || [];
+    FIRMS = r[1].data || [];
+    WORK  = {}; (r[2].data || []).forEach(function (w) { WORK[w.firm_id] = w; });
+    LOG   = {}; (r[3].data || []).forEach(function (a) {
+      (LOG[a.firm_id] = LOG[a.firm_id] || []).push(a); });
+  });
+}
+
+function subscribe() {
+  sb.channel("board")
+    .on("postgres_changes", { event: "*", schema: "public", table: "work" }, function (p) {
+      if (p.eventType === "DELETE") delete WORK[p.old.firm_id];
+      else WORK[p.new.firm_id] = p.new;
+      renderOne(p.new ? p.new.firm_id : p.old.firm_id); counts();
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity" }, function (p) {
+      var a = p.new; (LOG[a.firm_id] = LOG[a.firm_id] || []).push(a); renderOne(a.firm_id);
+    })
+    .subscribe();
+}
+
+// ---------------------------------------------------------------- writing
+function nameOf(email) {
+  var t = team.filter(function (x) { return x.email === email; })[0];
+  return t ? t.full_name : (email || "");
+}
+
+function saveWork(fid, patch, what, note) {
+  var cur = WORK[fid] || { firm_id: fid };
+  var row = {
+    firm_id: fid,
+    owner_email: "owner_email" in patch ? patch.owner_email : (cur.owner_email || null),
+    status:      "status"      in patch ? patch.status      : (cur.status || "Not started"),
+    next_date:   "next_date"   in patch ? patch.next_date   : (cur.next_date || null),
+    next_note:   "next_note"   in patch ? patch.next_note   : (cur.next_note || null),
+    updated_at: new Date().toISOString(),
+    updated_by: me.email
+  };
+  WORK[fid] = row; renderOne(fid); counts();          // optimistic
+  sb.from("work").upsert(row, { onConflict: "firm_id" }).then(function (r) {
+    if (r.error) { toast("Not saved: " + r.error.message); return; }
+    if (what) {
+      var a = { firm_id: fid, by_email: me.email, what: what, note: note || null };
+      sb.from("activity").insert(a).then(function (r2) {
+        if (r2.error) toast("Saved, but the history line did not: " + r2.error.message);
+      });
+    }
+  });
+}
+
+// ---------------------------------------------------------------- rendering
+function visible(f) {
+  var w = WORK[f.firm_id] || {};
+  if (q) {
+    var hay = (f.company + " " + f.city + " " + f.principal + " " + f.state).toLowerCase();
+    if (hay.indexOf(q) < 0) return false;
+  }
+  if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+  if (view === "mine")   return w.owner_email === me.email;
+  if (view === "free")   return !w.owner_email && !CLOSED[w.status];
+  if (view === "due")    return !!(w.next_date && w.next_date <= today());
+  if (view === "worked") return !!(w.status && w.status !== "Not started");
+  return !CLOSED[w.status];
+}
+
+function card(f) {
+  var w = WORK[f.firm_id] || {}, log = LOG[f.firm_id] || [];
+  var cls = "call" + (f.priority === "ACUTE" ? " acute" : "") +
+            (w.owner_email ? " claimed" : "") + (CLOSED[w.status] ? " closed" : "");
+  var bits = [];
+  bits.push(esc(f.principal || "principal unknown"));
+  bits.push(esc((f.city || "") + ", " + (f.state || "")));
+  if (f.phone) bits.push('<a class="tel" href="tel:' + esc(String(f.phone).replace(/\s/g, "")) +
+      '">' + esc(f.phone) + '</a> <span class="est">' + esc(f.phone_type || "office") + "</span>");
+  else bits.push('<span class="nonum">no number yet</span>');
+  if (f.email) bits.push('<a href="mailto:' + esc(f.email) + '">' + esc(f.email) + "</a>");
+  if (f.website) bits.push('<a href="https://' + esc(String(f.website).replace(/^https?:\/\//, "")) +
+      '" target="_blank" rel="noopener">' + esc(f.website) + "</a>");
+  if (f.staff) bits.push("<b>" + esc(f.staff) + " staff</b>");
+  if (f.revenue_estimate) bits.push(esc(f.revenue_estimate));
+  if (f.line_of_work) bits.push("<i>" + esc(f.line_of_work) + "</i>");
+
+  var owner = w.owner_email
+    ? '<span class="owner' + (w.owner_email === me.email ? " mine" : "") + '">' +
+      esc(nameOf(w.owner_email)) + "</span>"
+    : '<span class="owner none">unclaimed</span>';
+
+  var opts = ['<option value="">assign to…</option>'].concat(team.map(function (t) {
+    return '<option value="' + esc(t.email) + '"' +
+      (w.owner_email === t.email ? " selected" : "") + ">" + esc(t.full_name) + "</option>";
+  })).join("");
+
+  var btns = STATUSES.map(function (s) {
+    return '<button class="b' + (s[2] ? " bad" : "") + (w.status === s[0] ? " on" : "") +
+      '" data-status="' + esc(s[0]) + '">' + esc(s[1]) + "</button>";
+  }).join("");
+
+  var dueTxt = "", dueCls = "due";
+  if (w.next_date) {
+    var late = w.next_date <= today();
+    dueTxt = (late ? "due " : "scheduled ") + w.next_date;
+    if (!late) dueCls = "due ok";
+  }
+
+  var hist = log.length
+    ? log.slice().reverse().map(function (a) {
+        return "<li><span class='t'>" + esc(when(a.at)) + "</span> — <b>" +
+          esc(nameOf(a.by_email)) + "</b> " + esc(a.what) +
+          (a.note ? ": " + esc(a.note) : "") + "</li>"; }).join("")
+    : "<li class='t'>Nothing recorded yet.</li>";
+
+  return '<div class="' + cls + '" data-fid="' + esc(f.firm_id) + '">' +
+    '<div class="top"><span class="firm">' + esc(f.company) + "</span>" +
+    '<span class="badge' + (f.priority === "ACUTE" ? " acute" : "") + '">' +
+      esc(f.priority || "") + " · " + esc(f.score == null ? "" : f.score) + "</span>" + owner + "</div>" +
+    '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
+    (f.address ? '<div class="addr">' + esc(f.address) + "</div>" : "") +
+    (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
+    '<div class="ctl">' + '<select data-assign>' + opts + "</select>" + btns + "</div>" +
+    '<div class="ctl"><label style="font-size:12px;color:var(--mute)">Next</label>' +
+      '<input type="date" data-date value="' + esc(w.next_date || "") + '">' +
+      '<input type="text" data-note placeholder="what happens next — “send the letter”, “ask about his partner”" value="' +
+        esc(w.next_note || "") + '">' +
+      '<button class="b" data-save>Set</button>' +
+      '<span class="' + dueCls + '">' + esc(dueTxt) + "</span></div>" +
+    '<details class="log"><summary>Activity' + (log.length ? " (" + log.length + ")" : "") +
+      "</summary><ul>" + hist + "</ul></details>" +
+    "</div>";
+}
+
+function renderOne(fid) {
+  var el = $('.call[data-fid="' + (window.CSS && CSS.escape ? CSS.escape(fid) : fid) + '"]');
+  if (!el) { render(); return; }
+  var f = FIRMS.filter(function (x) { return x.firm_id === fid; })[0];
+  if (!f) return;
+  var open = $("details.log", el) && $("details.log", el).open;
+  el.outerHTML = card(f);
+  if (open) { var n = $('.call[data-fid="' + (window.CSS && CSS.escape ? CSS.escape(fid) : fid) + '"] details.log');
+    if (n) n.open = true; }
+}
+
+function render() {
+  var shown = FIRMS.filter(visible);
+  var by = {};
+  shown.forEach(function (f) { (by[f.state || "??"] = by[f.state || "??"] || []).push(f); });
+  var order = Object.keys(by).sort(function (a, b) { return by[b].length - by[a].length; });
+  var h = order.map(function (st) {
+    return '<h3 class="st">' + esc(STATES[st] || st) +
+      '<span class="k">' + by[st].length + " showing</span></h3>" +
+      by[st].map(card).join("");
+  }).join("");
+  $("#list").innerHTML = h ||
+    '<div class="empty">Nothing matches. Try <b>Everything</b>, or clear the search box.</div>';
+  $$("#states .chip").forEach(function (c) {
+    c.classList.toggle("on", c.dataset.st === stateFilter); });
+  $$(".board [data-view]").forEach(function (c) {
+    c.classList.toggle("on", c.dataset.view === view); });
+}
+
+function counts() {
+  var n = { all: 0, mine: 0, free: 0, due: 0, worked: 0 };
+  FIRMS.forEach(function (f) {
+    var w = WORK[f.firm_id] || {};
+    if (!CLOSED[w.status]) n.all++;
+    if (w.owner_email === me.email) n.mine++;
+    if (!w.owner_email && !CLOSED[w.status]) n.free++;
+    if (w.next_date && w.next_date <= today()) n.due++;
+    if (w.status && w.status !== "Not started") n.worked++;
+  });
+  Object.keys(n).forEach(function (k) { var e = $("#n-" + k); if (e) e.textContent = n[k]; });
+
+  var acute = FIRMS.filter(function (f) { return f.priority === "ACUTE"; }).length;
+  var dual  = FIRMS.filter(function (f) { return (f.line_of_work || "").indexOf("+") > -1; }).length;
+  var phone = FIRMS.filter(function (f) { return !!f.phone; }).length;
+  $("#tiles").innerHTML =
+    tile(n.free, "Left to call", true) + tile(n.mine, "Yours") +
+    tile(n.due, "Follow-ups due", n.due > 0) + tile(acute, "Acute") +
+    tile(dual, "Civil + survey") +
+    tile(phone + " / " + FIRMS.length, "Have a number");
+}
+function tile(v, l, hot) {
+  return '<div class="tile"><div class="n' + (hot ? " hot" : "") + '">' + esc(v) +
+         '</div><div class="l">' + esc(l) + "</div></div>";
+}
+
+function stateChips() {
+  var c = {};
+  FIRMS.forEach(function (f) { c[f.state] = (c[f.state] || 0) + 1; });
+  var keys = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; });
+  $("#states").innerHTML = '<button class="chip on" data-st="ALL">All states</button>' +
+    keys.map(function (s) {
+      return '<button class="chip" data-st="' + esc(s) + '">' + esc(s) +
+             '<span class="k">' + c[s] + "</span></button>"; }).join("");
+}
+
+// ---------------------------------------------------------------- events
+document.addEventListener("click", function (e) {
+  var t = e.target;
+  if (t.dataset && t.dataset.view) { view = t.dataset.view; render(); return; }
+  if (t.dataset && t.dataset.st)   { stateFilter = t.dataset.st; render(); return; }
+  var box = t.closest && t.closest(".call"); if (!box) return;
+  var fid = box.dataset.fid;
+  if (t.dataset.status !== undefined) {
+    var cur = (WORK[fid] || {}).status;
+    var next = cur === t.dataset.status ? "Not started" : t.dataset.status;
+    var patch = { status: next };
+    if (!(WORK[fid] || {}).owner_email) patch.owner_email = me.email;
+    saveWork(fid, patch, next === "Not started" ? "cleared the status" : next.toLowerCase());
+    return;
+  }
+  if (t.dataset.save !== undefined) {
+    var d = $("[data-date]", box).value, nt = $("[data-note]", box).value.trim();
+    if (!d) { toast("Pick a date for the follow-up."); return; }
+    saveWork(fid, { next_date: d, next_note: nt }, "scheduled " + d, nt);
+    toast("Follow-up set for " + d);
+  }
+});
+
+document.addEventListener("change", function (e) {
+  var sel = e.target.closest && e.target.closest("[data-assign]"); if (!sel) return;
+  var fid = sel.closest(".call").dataset.fid, to = sel.value || null;
+  saveWork(fid, { owner_email: to },
+    to ? (to === me.email ? "claimed it" : "assigned to " + nameOf(to)) : "unassigned");
+});
+
+$("#search").addEventListener("input", function () { q = this.value.trim().toLowerCase(); render(); });
+
+// ---------------------------------------------------------------- boot
+function start() {
+  $("#gate").hidden = true; $("#app").hidden = false;
+  $("#whoami").textContent = nameOf(me.email) || me.email;
+  $("#stamp").textContent = FIRMS.length.toLocaleString() + " firms · list refreshed " +
+    (FIRMS[0] && FIRMS[0].refreshed_at ? new Date(FIRMS[0].refreshed_at).toLocaleDateString() : "—");
+  $("#foot").textContent =
+    "Internal use · a ranking tool, not a valuation · do not quote the revenue estimates";
+  stateChips(); render(); counts(); subscribe();
+}
+
+function boot() {
+  if (!window.supabase || !CFG.SUPABASE_URL || CFG.SUPABASE_URL.indexOf("YOUR-PROJECT") > -1) {
+    showGate("This page has not been configured yet — config.js still has its placeholder values.", "err");
+    return;
+  }
+  sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+  sb.auth.getSession().then(function (r) {
+    var s = r.data && r.data.session;
+    if (!s) { showGate(); return; }
+    me = s.user;
+    load().then(start).catch(function (err) {
+      sb.auth.signOut();
+      showGate("Signed in, but this address is not on the team list. Ask Jason to add it. (" +
+        (err.message || err) + ")", "err");
+    });
+  });
+  sb.auth.onAuthStateChange(function (evt) {
+    if (evt === "SIGNED_IN" && !me) location.reload();
+  });
+}
+boot();
+})();
+</script>
+</body>
+</html>
