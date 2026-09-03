@@ -84,6 +84,13 @@ h3.st .k{font:400 12px -apple-system,sans-serif;color:var(--mute);
 .tel{font-weight:700;font-family:ui-monospace,Menlo,monospace;text-decoration:none;
  border-bottom:1px solid #BFD8C6;color:var(--green)}
 .est{color:var(--gold);font-size:12px}
+.band{display:inline-block;font:700 10px/1.5 ui-monospace,Menlo,monospace;
+ padding:1px 6px;margin-left:5px;vertical-align:2px;border:1px solid currentColor}
+.band.P1{color:#1F7A3D;background:#EAF6EE}
+.band.P2{color:#7A5A12;background:#FBF3E0}
+.band.P3{color:#6B6B6B;background:#F2F1EE}
+.band.P4{color:#8A8A8A}
+.askfor{color:var(--green);font-weight:700}
 .nonum{color:var(--faint);font-style:italic}
 .addr{color:var(--mute);font-size:13px;margin-top:3px}
 .why{margin-top:8px;padding-top:8px;border-top:1px solid #EEEBE3;font-size:14px;
@@ -158,7 +165,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
     <div class="row" style="margin-bottom:7px">
       <button class="chip tierchip" data-tier="1">Today's calls<span class="k" id="t-1">0</span></button>
       <button class="chip tierchip" data-tier="2">Tier 2<span class="k" id="t-2">0</span></button>
-      <button class="chip tierchip" data-tier="3">Tier 3<span class="k" id="t-3">0</span></button>
+      <button class="chip tierchip" data-tier="3">Tier 3 — watch list<span class="k" id="t-3">0</span></button>
       <span class="gap"></span>
       <button class="chip" id="slacktoggle">From Slack<span class="k" id="t-slack">0</span></button>
     </div>
@@ -233,7 +240,7 @@ var SLACK_STATUSES = [
 ];
 var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
-var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {},
+var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
     view = "all", stateFilter = "ALL", tier = 1, q = "";
 
 // ---------------------------------------------------------------- sign in
@@ -312,7 +319,8 @@ function load() {
     fetchAll("work"),
     fetchAll("activity", "at", true),
     sb.from("slack_actions").select("*").order("id"),
-    fetchAll("slack_activity", "at", true)
+    fetchAll("slack_activity", "at", true),
+    sb.from("enrichment_queue").select("*")
   ]).then(function (r) {
     if (r[0].error) throw r[0].error;
     team  = r[0].data || [];
@@ -323,6 +331,9 @@ function load() {
     SLACK = (r[4] && r[4].data) || [];
     SLOG  = {}; (r[5] || []).forEach(function (a) {
       (SLOG[a.action_id] = SLOG[a.action_id] || []).push(a); });
+    QUEUE = {};
+    ((r[6] && r[6].data) || []).forEach(function (q) {
+      if (q.firm_id) QUEUE[q.firm_id] = q; });
   });
 }
 
@@ -395,8 +406,14 @@ function card(f) {
   var w = WORK[f.firm_id] || {}, log = LOG[f.firm_id] || [];
   var cls = "call" + (f.priority === "ACUTE" ? " acute" : "") +
             (w.owner_email ? " claimed" : "") + (CLOSED[w.status] ? " closed" : "");
-  var bits = [];
-  bits.push(esc(f.principal || "principal unknown"));
+  var bits = [], eq = QUEUE[f.firm_id];
+  if (f.principal) {
+    bits.push('ask for <span class="askfor">' + esc(f.principal) + '</span>' +
+      (eq ? ' <span class="band ' + esc(eq.band) + '">' + esc(eq.band) +
+            (eq.direct_dial === "yes" ? " direct dial" : " dial unsure") + '</span>' : ''));
+  } else {
+    bits.push('<span class="nonum">principal unknown</span>');
+  }
   bits.push(esc((f.city || "") + ", " + (f.state || "")));
   if (f.phone) bits.push('<a class="tel" href="tel:' + esc(String(f.phone).replace(/\s/g, "")) +
       '">' + esc(f.phone) + '</a> <span class="est">' + esc(f.phone_type || "office") + "</span>");
@@ -499,15 +516,22 @@ function render() {
 }
 
 var BLURB = {
-  1: "Tier 1 \u2014 surveying and civil engineering. This is the work. The ones " +
-     "reading Civil engineering + land surveying do both, and that is the shape " +
-     "ZenaTech buys. Best hours 7:00\u20138:15 am and 4:30\u20136:00 pm.",
+  1: "Tier 1 \u2014 qualified targets only. Every firm here clears $1M+ gross revenue " +
+     "and 11\u2013200 staff on Apollo's estimate, cross-checked against headcount. " +
+     "That revenue figure is a MODEL ESTIMATE, not a filing \u2014 never quote it on a call. " +
+     "Where a card says ask for a first name, the name came from Apollo and the surname " +
+     "is masked until enrichment; a first name is still enough to get past a gatekeeper. " +
+     "P1 means an owner with a confirmed direct dial sits behind that firm. Cards reading " +
+     "ALREADY ACQUIRED are not sellers \u2014 they are who you are bidding against. " +
+     "Best hours 7:00\u20138:15 am and 4:30\u20136:00 pm.",
   2: "Tier 2 \u2014 proven adjacent buys: building inspection, power and pressure " +
      "washing, testing labs, specialty exterior trades, and flight schools. " +
      "ZenaTech has bought in every one of these lines. Work these after tier 1, " +
      "not instead of it. Flight schools are Matt's and nobody else's.",
-  3: "Tier 3 \u2014 a watch list, not a call list. Found by company name only, so " +
-     "look the business up before you spend a call on it."
+  3: "Tier 3 \u2014 the licence-roster pool, moved here 3 September. These came off state " +
+     "licence rosters, so most are one- and two-person practices and many are individuals " +
+     "rather than companies. Not junk, but none clear the $1M revenue floor on current " +
+     "information. Look a business up before you spend a call on it."
 };
 
 function saveSlack(id, patch, what, note) {
