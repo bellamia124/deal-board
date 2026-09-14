@@ -390,6 +390,7 @@ function saveWork(fid, patch, what, note) {
 // ---------------------------------------------------------------- rendering
 function visible(f) {
   var w = WORK[f.firm_id] || {};
+  if (!f.phone && !f.email && !q) return false;  // hide firms with no phone/email until enriched
   if ((f.tier || 1) !== tier) return false;
   if (q) {
     var hay = (f.company + " " + f.city + " " + f.principal + " " + f.state).toLowerCase();
