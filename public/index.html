@@ -24,6 +24,10 @@ h1{font:600 28px/1.1 Georgia,serif;color:var(--green);margin:0 0 4px}
 .me b{color:var(--green)}
 .link{background:none;border:none;color:var(--mute);font:inherit;font-size:12px;
  text-decoration:underline;cursor:pointer;padding:0}
+.guidebtn{display:inline-block;margin-top:9px;background:var(--green);color:#fff;
+ text-decoration:none;font-size:12px;font-weight:600;padding:5px 12px;border-radius:4px;
+ border:1px solid var(--green);letter-spacing:.02em;white-space:nowrap}
+.guidebtn:hover{background:#00591f;border-color:#00591f}
 
 /* ---- sign in ---- */
 #gate{max-width:430px;margin:9vh auto;background:var(--card);
@@ -154,7 +158,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 <div class="wrap">
   <header>
     <div class="me">Signed in as <b id="whoami"></b><br>
-      <button class="link" id="signout">sign out</button></div>
+      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="https://claude.ai/artifact/9gWbLfy1SUejGRz1LT1Dxc" target="_blank" rel="noopener">📋 Team Guide</a></div>
     <h1>Deal Board</h1>
     <div class="sub">ZenaTech buy-side mandate · <span id="stamp"></span></div>
   </header>
