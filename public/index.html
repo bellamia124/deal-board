@@ -227,6 +227,7 @@ var STATUSES = [
   ["Left voicemail","Voicemail",     false],
   ["Call back",     "Call back",     false],
   ["Interested",    "Interested",    false],
+  ["Emailed",       "emailed (manual)", false],
   ["Not for sale",  "Not for sale",  true ],
   ["Do not call",   "Do not call",   true ]
 ];
@@ -457,7 +458,7 @@ function card(f) {
   return '<div class="' + cls + '" data-fid="' + esc(f.firm_id) + '">' +
     '<div class="top"><span class="firm">' + esc(f.company) + "</span>" +
     '<span class="badge' + (f.priority === "ACUTE" ? " acute" : "") + '">' +
-      esc(f.priority || "") + " · " + esc(f.score == null ? "" : f.score) + "</span>" + owner + "</div>" +
+      esc(f.priority || "") + " · " + esc(f.score == null ? "" : f.score) + "</span>" + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
     '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
     (f.address ? '<div class="addr">' + esc(f.address) + "</div>" : "") +
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
