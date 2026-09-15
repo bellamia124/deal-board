@@ -172,6 +172,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <button class="chip tierchip" data-tier="3">Tier 3 — watch list<span class="k" id="t-3">0</span></button>
       <span class="gap"></span>
       <button class="chip" id="slacktoggle">From Slack<span class="k" id="t-slack">0</span></button>
+      <button class="chip" id="p1cell" style="border-color:var(--gold);color:var(--green);font-weight:600">☎ P1 · direct cell<span class="k" id="t-p1">0</span></button>
     </div>
     <div class="row">
       <button class="chip" data-view="all">Everything<span class="k" id="n-all">0</span></button>
@@ -246,7 +247,7 @@ var SLACK_STATUSES = [
 var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
-    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "";
+    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false;
 
 // ---------------------------------------------------------------- sign in
 function showGate(msg, kind) {
@@ -392,6 +393,7 @@ function saveWork(fid, patch, what, note) {
 }
 
 // ---------------------------------------------------------------- rendering
+function isDirectCell(f){ return !!(f.phone_type && f.phone_type.toUpperCase().indexOf("DIRECT") >= 0); }
 function contactable(f){
   var w = WORK[f.firm_id] || {};
   // reachable = has a phone/email, OR is already in play (claimed / worked / scheduled follow-up)
@@ -399,6 +401,12 @@ function contactable(f){
 }
 function visible(f) {
   var w = WORK[f.firm_id] || {};
+  if (p1Only) {
+    if (!isDirectCell(f)) return false;
+    if (q) { var h2=(f.company+" "+f.city+" "+f.principal+" "+f.state).toLowerCase(); if (h2.indexOf(q)<0) return false; }
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+    return !CLOSED[w.status];
+  }
   if (!contactable(f) && !q) return false;  // hide only UNTOUCHED no-contact firms; a claimed/worked/scheduled firm always shows
   if ((f.tier || 1) !== tier) return false;
   if (q) {
@@ -527,6 +535,7 @@ function render() {
     c.classList.toggle("on", c.dataset.view === view); });
   $$("#brokers .chip").forEach(function (c) {
     c.classList.toggle("on", c.dataset.owner === ownerFilter); });
+  var pcx = $("#p1cell"); if (pcx) pcx.classList.toggle("on", p1Only);
 }
 
 var BLURB = {
@@ -673,6 +682,8 @@ function counts() {
     return a.next_date && a.next_date <= today() && !SLACK_CLOSED[a.status]; }).length;
   if (sdue) open = open + "\u00a0\u00b7\u00a0" + sdue + " due";
   var se = $("#t-slack"); if (se) se.textContent = open;
+  var p1n = FIRMS.filter(function (f) { return isDirectCell(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
+  var pe = $("#t-p1"); if (pe) pe.textContent = p1n;
   var st = $("#slacktoggle"); if (st) st.style.color = open ? "var(--red)" : "";
 
   var acute = FIRMS.filter(function (f) { return f.priority === "ACUTE"; }).length;
@@ -725,7 +736,8 @@ function stateChips() {
 document.addEventListener("click", function (e) {
   var t = e.target;
   if (t.dataset && t.dataset.tier) {
-    tier = Number(t.dataset.tier); stateFilter = "ALL"; stateChips(); render(); counts(); return; }
+    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; stateChips(); render(); counts(); return; }
+  if (t.id === "p1cell") { p1Only = !p1Only; render(); counts(); return; }
   if (t.id === "slacktoggle") {
     var panel = $("#slackpanel");
     panel.hidden = !panel.hidden;
