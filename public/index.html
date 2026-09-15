@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
-<title>Deal Board — ZenaTech</title>
+<title>Deal Board</title>
 <style>
 :root{
   --green:#00461C; --gold:#9D7D4F; --ink:#14120D; --grey:#4A4A42;
@@ -143,7 +143,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 
 <div id="gate" hidden>
   <h1>Deal Board</h1>
-  <p>Transworld Business Advisors of Florida &middot; ZenaTech buy-side mandate</p>
+  <p>Transworld Business Advisors of Florida &middot; buy-side mandate</p>
   <p style="font-size:13px">Only the three invited work addresses can get in.
      First time here? Enter your email, pick a password, and press
      <b>Set my password</b>.</p>
@@ -160,7 +160,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
     <div class="me">Signed in as <b id="whoami"></b><br>
       <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a></div>
     <h1>Deal Board</h1>
-    <div class="sub">ZenaTech buy-side mandate · <span id="stamp"></span></div>
+    <div class="sub">Buy-side mandate · <span id="stamp"></span></div>
   </header>
 
   <div class="tiles" id="tiles"></div>
@@ -182,6 +182,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <span class="gap"></span>
       <input id="search" type="search" placeholder="find a company, town or person">
     </div>
+    <div class="row" id="brokers" style="margin-top:7px"></div>
     <div class="row" id="states" style="margin-top:7px"></div>
   </div>
 
@@ -246,7 +247,7 @@ var SLACK_STATUSES = [
 var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
-    view = "all", stateFilter = "ALL", tier = 1, q = "";
+    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "";
 
 // ---------------------------------------------------------------- sign in
 function showGate(msg, kind) {
@@ -392,15 +393,21 @@ function saveWork(fid, patch, what, note) {
 }
 
 // ---------------------------------------------------------------- rendering
+function contactable(f){
+  var w = WORK[f.firm_id] || {};
+  // reachable = has a phone/email, OR is already in play (claimed / worked / scheduled follow-up)
+  return !!(f.phone || f.email || w.owner_email || (w.status && w.status !== "Not started") || w.next_date);
+}
 function visible(f) {
   var w = WORK[f.firm_id] || {};
-  if (!f.phone && !f.email && !q) return false;  // hide firms with no phone/email until enriched
+  if (!contactable(f) && !q) return false;  // hide only UNTOUCHED no-contact firms; a claimed/worked/scheduled firm always shows
   if ((f.tier || 1) !== tier) return false;
   if (q) {
     var hay = (f.company + " " + f.city + " " + f.principal + " " + f.state).toLowerCase();
     if (hay.indexOf(q) < 0) return false;
   }
   if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+  if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
   if (view === "mine")   return w.owner_email === me.email;
   if (view === "free")   return !w.owner_email && !CLOSED[w.status];
   if (view === "due")    return !!(w.next_date && w.next_date <= today());
@@ -507,7 +514,7 @@ function render() {
       by[st].map(card).join("");
   }).join("");
   $("#list").innerHTML = (h || 
-    '<div class="empty">Nothing matches. Try <b>Everything</b>, or clear the search box.</div>') +
+    '<div class="empty">Nothing matches these filters. Widen to <b>All brokers</b>, <b>All states</b>, or <b>Everything</b> — or clear the search.</div>') +
     (capped ? '<div class="note"><b>' + capped.toLocaleString() + ' more not shown.</b> ' +
       'The highest-scoring 400 are drawn so the page stays quick \u2014 pick a state ' +
       'above, or search, to reach the rest.</div>' : "");
@@ -519,20 +526,22 @@ function render() {
     c.classList.toggle("on", c.dataset.st === stateFilter); });
   $$(".board [data-view]").forEach(function (c) {
     c.classList.toggle("on", c.dataset.view === view); });
+  $$("#brokers .chip").forEach(function (c) {
+    c.classList.toggle("on", c.dataset.owner === ownerFilter); });
 }
 
 var BLURB = {
-  1: "Tier 1 \u2014 qualified targets only. Every firm here clears $1M+ gross revenue " +
-     "and 11\u2013200 staff on Apollo's estimate, cross-checked against headcount. " +
+  1: "Tier 1 \u2014 best-fit targets (model estimate). Every firm here clears $1M+ gross revenue " +
+     "and 11\u2013200 staff on the model's estimate, cross-checked against headcount. " +
      "That revenue figure is a MODEL ESTIMATE, not a filing \u2014 never quote it on a call. " +
-     "Where a card says ask for a first name, the name came from Apollo and the surname " +
+     "Where a card says ask for a first name, only the first name is on file and the surname " +
      "is masked until enrichment; a first name is still enough to get past a gatekeeper. " +
      "P1 means an owner with a confirmed direct dial sits behind that firm. Cards reading " +
      "ALREADY ACQUIRED are not sellers \u2014 they are who you are bidding against. " +
      "Best hours 7:00\u20138:15 am and 4:30\u20136:00 pm.",
   2: "Tier 2 \u2014 proven adjacent buys: building inspection, power and pressure " +
      "washing, testing labs, specialty exterior trades, and flight schools. " +
-     "ZenaTech has bought in every one of these lines. Work these after tier 1, " +
+     "The buyer has bought in every one of these lines. Work these after tier 1, " +
      "not instead of it. Flight schools are Matt's and nobody else's.",
   3: "Tier 3 \u2014 the licence-roster pool, moved here 3 September. These came off state " +
      "licence rosters, so most are one- and two-person practices and many are individuals " +
@@ -629,21 +638,36 @@ function paintSlack() {
     '<div class="empty">Nothing open from Slack.</div>';
 }
 
+function firmView(f, w, v) {
+  if (v === "mine")   return w.owner_email === me.email;
+  if (v === "free")   return !w.owner_email && !CLOSED[w.status];
+  if (v === "due")    return !!(w.next_date && w.next_date <= today());
+  if (v === "worked") return !!(w.status && w.status !== "Not started");
+  return !CLOSED[w.status];
+}
 function counts() {
   var n = { all: 0, mine: 0, free: 0, due: 0, worked: 0 };
   FIRMS.forEach(function (f) {
     if ((f.tier || 1) !== tier) return;
+    if (!contactable(f)) return;                                   // only what the board shows
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return;  // respect the active state
     var w = WORK[f.firm_id] || {};
-    if (!CLOSED[w.status]) n.all++;
-    if (w.owner_email === me.email) n.mine++;
-    if (!w.owner_email && !CLOSED[w.status]) n.free++;
-    if (w.next_date && w.next_date <= today()) n.due++;
-    if (w.status && w.status !== "Not started") n.worked++;
+    if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return; // respect the active broker
+    if (firmView(f, w, "all"))    n.all++;
+    if (firmView(f, w, "mine"))   n.mine++;
+    if (firmView(f, w, "free"))   n.free++;
+    if (firmView(f, w, "due"))    n.due++;
+    if (firmView(f, w, "worked")) n.worked++;
   });
   Object.keys(n).forEach(function (k) { var e = $("#n-" + k); if (e) e.textContent = n[k]; });
   [1, 2, 3].forEach(function (t) {
     var e = $("#t-" + t);
-    if (e) e.textContent = FIRMS.filter(function (f) { return (f.tier || 1) === t; }).length;
+    if (e) e.textContent = FIRMS.filter(function (f) {
+      if ((f.tier || 1) !== t || !contactable(f)) return false;
+      var w = WORK[f.firm_id] || {};
+      if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
+      return firmView(f, w, view);   // tier counts reflect current view + broker (state resets on tier click)
+    }).length;
   });
   var open = SLACK.filter(function (a) { return !SLACK_CLOSED[a.status]; }).length;
   var sdue = SLACK.filter(function (a) {
@@ -654,22 +678,42 @@ function counts() {
 
   var acute = FIRMS.filter(function (f) { return f.priority === "ACUTE"; }).length;
   var dual  = FIRMS.filter(function (f) { return (f.line_of_work || "").indexOf("+") > -1; }).length;
-  var phone = FIRMS.filter(function (f) { return !!f.phone; }).length;
+  var phone = FIRMS.filter(function (f) { return !!(f.phone || f.email); }).length;
   $("#tiles").innerHTML =
     tile(n.free, "Left to call", true) + tile(n.mine, "Yours") +
     tile(n.due, "Follow-ups due", n.due > 0) + tile(acute, "Acute") +
     tile(dual, "Civil + survey") +
-    tile(phone + " / " + FIRMS.length, "Have a number");
+    tile(phone + " / " + FIRMS.length, "Reachable");
+  brokerChips();
 }
 function tile(v, l, hot) {
   return '<div class="tile"><div class="n' + (hot ? " hot" : "") + '">' + esc(v) +
          '</div><div class="l">' + esc(l) + "</div></div>";
 }
 
+function brokerChips() {
+  var el = $("#brokers"); if (!el) return;
+  var c = {};
+  FIRMS.forEach(function (f) {
+    if ((f.tier || 1) !== tier) return;
+    if (!contactable(f)) return;
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return;
+    var w = WORK[f.firm_id] || {};
+    if (w.owner_email && !CLOSED[w.status]) c[w.owner_email] = (c[w.owner_email] || 0) + 1;
+  });
+  el.innerHTML = '<button class="chip' + (ownerFilter === "ALL" ? " on" : "") + '" data-owner="ALL">All brokers</button>' +
+    team.map(function (t) {
+      return '<button class="chip' + (ownerFilter === t.email ? " on" : "") + '" data-owner="' + esc(t.email) + '">' +
+        esc(t.full_name) + '<span class="k">' + (c[t.email] || 0) + '</span></button>'; }).join("");
+}
 function stateChips() {
   var c = {};
   FIRMS.forEach(function (f) {
     if ((f.tier || 1) !== tier) return;
+    if (!contactable(f)) return;
+    var w = WORK[f.firm_id] || {};
+    if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return;
+    if (!firmView(f, w, view)) return;
     c[f.state] = (c[f.state] || 0) + 1; });
   var keys = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; });
   $("#states").innerHTML = '<button class="chip on" data-st="ALL">All states</button>' +
@@ -712,6 +756,8 @@ document.addEventListener("click", function (e) {
     }
   }
   if (t.dataset && t.dataset.view) { view = t.dataset.view; render(); return; }
+  var _ob = t.closest && t.closest("[data-owner]");
+  if (_ob) { ownerFilter = _ob.dataset.owner; render(); return; }
   if (t.dataset && t.dataset.st)   { stateFilter = t.dataset.st; render(); return; }
   var box = t.closest && t.closest(".call"); if (!box) return;
   var fid = box.dataset.fid;
