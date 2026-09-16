@@ -394,6 +394,9 @@ function saveWork(fid, patch, what, note) {
 
 // ---------------------------------------------------------------- rendering
 function isDirectCell(f){ return !!(f.phone_type && f.phone_type.toUpperCase().indexOf("DIRECT") >= 0); }
+function firstNameOf(f){ var p=(f.principal||"").trim(); if(!p) return "there"; var t=p.split(/[ (,\-]/)[0]; return t||"there"; }
+function smsText(f){ var fn=firstNameOf(f), co=f.company||"your firm";
+  return fn+" \u2014 Jason Curcio, Transworld. I represent one NASDAQ-listed strategic buyer (not PE) quietly acquiring survey/civil firms, and they\u2019re active in your market. Not asking you to list \u2014 15 confidential minutes so you\u2019d know what "+co+" is worth to them. Worth a quick call this week? Reply STOP and you\u2019ll never hear from me again."; }
 function contactable(f){
   var w = WORK[f.firm_id] || {};
   // reachable = has a phone/email, OR is already in play (claimed / worked / scheduled follow-up)
@@ -491,6 +494,9 @@ function card(f) {
     '<div class="ctl"><label style="font-size:12px;color:var(--mute)">What happened?</label>' +
       '<input type="text" data-hap placeholder="the objection / how the dial went \u2014 \u201cnot interested\u201d, \u201casked who the buyer is\u201d" style="flex:1;min-width:200px">' +
       '<button class="b" data-log>Log</button></div>' +
+    (isDirectCell(f) && (f.phone_type||"").toUpperCase().indexOf("DNC") < 0 ?
+      '<div class="ctl"><button class="b" data-sms>\ud83d\udcac Copy text</button>' +
+      '<span style="font-size:11px;color:var(--mute)">1:1 only \u00b7 send from your phone \u00b7 never a blast</span></div>' : '') +
     '<details class="log"><summary>Activity' + (log.length ? " (" + log.length + ")" : "") +
       "</summary><ul>" + hist + "</ul></details>" +
     "</div>";
@@ -796,6 +802,14 @@ document.addEventListener("click", function (e) {
     saveWork(fid, {}, "on the phone", hp);
     var hi = $("[data-hap]", box); if (hi) hi.value = "";
     toast("Logged to history.");
+    return;
+  }
+  if (t.dataset.sms !== undefined) {
+    var ff = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!ff) return;
+    var txt = smsText(ff);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function(){ toast("Text copied \u2014 paste into Messages."); }, function(){ window.prompt("Copy the text:", txt); });
+    } else { window.prompt("Copy the text:", txt); }
     return;
   }
 });
