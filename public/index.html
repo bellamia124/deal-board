@@ -94,6 +94,7 @@ h3.st .k{font:400 12px -apple-system,sans-serif;color:var(--mute);
 .band.P2{color:#7A5A12;background:#FBF3E0}
 .band.P3{color:#6B6B6B;background:#F2F1EE}
 .band.P4{color:#8A8A8A}
+.band.REP{color:#fff;background:#1F7A3D;border-color:#1F7A3D}
 .askfor{color:var(--green);font-weight:700}
 .nonum{color:var(--faint);font-style:italic}
 .addr{color:var(--mute);font-size:13px;margin-top:3px}
@@ -172,6 +173,8 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <button class="chip tierchip" data-tier="3">Tier 3 — watch list<span class="k" id="t-3">0</span></button>
       <span class="gap"></span>
       <button class="chip" id="slacktoggle">From Slack<span class="k" id="t-slack">0</span></button>
+      <button class="chip" id="unmatchedtoggle">Unmatched replies<span class="k" id="t-unmatched">0</span></button>
+      <button class="chip" id="replychip" style="border-color:#1F7A3D;color:#1F7A3D;font-weight:600">✉ Replied<span class="k" id="t-reply">0</span></button>
       <button class="chip" id="p1cell" style="border-color:var(--gold);color:var(--green);font-weight:600">☎ P1 · direct cell<span class="k" id="t-p1">0</span></button>
     </div>
     <div class="row">
@@ -187,6 +190,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
   </div>
 
   <div id="slackpanel" hidden></div>
+  <div id="unmatchedpanel" hidden></div>
   <div id="tierblurb" class="note" hidden></div>
   <div id="list"></div>
   <footer id="foot"></footer>
@@ -247,7 +251,8 @@ var SLACK_STATUSES = [
 var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
-    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false;
+    UNMATCHED = [],
+    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false;
 
 // ---------------------------------------------------------------- sign in
 function showGate(msg, kind) {
@@ -326,7 +331,8 @@ function load() {
     fetchAll("activity", "at", true),
     sb.from("slack_actions").select("*").order("id"),
     fetchAll("slack_activity", "at", true),
-    sb.from("enrichment_queue").select("*")
+    sb.from("enrichment_queue").select("*"),
+    sb.from("unmatched_replies").select("*").eq("resolved", false).order("received_at", { ascending: false })
   ]).then(function (r) {
     if (r[0].error) throw r[0].error;
     team  = r[0].data || [];
@@ -340,6 +346,7 @@ function load() {
     QUEUE = {};
     ((r[6] && r[6].data) || []).forEach(function (q) {
       if (q.firm_id) QUEUE[q.firm_id] = q; });
+    UNMATCHED = (r[7] && r[7].data) || [];
   });
 }
 
@@ -358,7 +365,10 @@ function subscribe() {
       paintSlack(); counts();
     })
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity" }, function (p) {
-      var a = p.new; (LOG[a.firm_id] = LOG[a.firm_id] || []).push(a); renderOne(a.firm_id);
+      var a = p.new; (LOG[a.firm_id] = LOG[a.firm_id] || []).push(a); renderOne(a.firm_id); counts();
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "unmatched_replies" }, function (p) {
+      if (p.new && !p.new.resolved) { UNMATCHED.unshift(p.new); paintUnmatched(); counts(); }
     })
     .subscribe();
 }
@@ -394,6 +404,13 @@ function saveWork(fid, patch, what, note) {
 
 // ---------------------------------------------------------------- rendering
 function isDirectCell(f){ return !!(f.phone_type && f.phone_type.toUpperCase().indexOf("DIRECT") >= 0); }
+function hasReply(f){
+  var w = WORK[f.firm_id] || {};
+  if (w.auto_hold_reason && /repl/i.test(w.auto_hold_reason)) return true;
+  var lg = LOG[f.firm_id] || [];
+  for (var i = 0; i < lg.length; i++) { if (/repl/i.test(lg[i].what || "")) return true; }
+  return false;
+}
 function firstNameOf(f){ var p=(f.principal||"").trim(); if(!p) return "there"; var t=p.split(/[ (,\-]/)[0]; return t||"there"; }
 function smsText(f){ var fn=firstNameOf(f), co=f.company||"your firm";
   return fn+" \u2014 Jason Curcio, Transworld. I represent one NASDAQ-listed strategic buyer (not PE) quietly acquiring survey/civil firms, and they\u2019re active in your market. Not asking you to list \u2014 15 confidential minutes so you\u2019d know what "+co+" is worth to them. Worth a quick call this week? Reply STOP and you\u2019ll never hear from me again."; }
@@ -407,6 +424,12 @@ function visible(f) {
   if (p1Only) {
     if (!isDirectCell(f)) return false;
     if (q) { var h2=(f.company+" "+f.city+" "+f.principal+" "+f.state).toLowerCase(); if (h2.indexOf(q)<0) return false; }
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+    return !CLOSED[w.status];
+  }
+  if (replyOnly) {
+    if (!hasReply(f)) return false;
+    if (q) { var h3=(f.company+" "+f.city+" "+f.principal+" "+f.state).toLowerCase(); if (h3.indexOf(q)<0) return false; }
     if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
     return !CLOSED[w.status];
   }
@@ -480,7 +503,7 @@ function card(f) {
   return '<div class="' + cls + '" data-fid="' + esc(f.firm_id) + '">' +
     '<div class="top"><span class="firm">' + esc(f.company) + "</span>" +
     '<span class="badge' + (f.priority === "ACUTE" ? " acute" : "") + '">' +
-      esc(f.priority || "") + " · " + esc(f.score == null ? "" : f.score) + "</span>" + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
+      esc(f.priority || "") + " · " + esc(f.score == null ? "" : f.score) + "</span>" + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
     '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
     ((f.address || f.city) ? '<div class="addr">' + esc([f.address, f.city, f.state].filter(Boolean).join(", ")) + "</div>" : "") +
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
@@ -545,6 +568,7 @@ function render() {
   $$("#brokers .chip").forEach(function (c) {
     c.classList.toggle("on", c.dataset.owner === ownerFilter); });
   var pcx = $("#p1cell"); if (pcx) pcx.classList.toggle("on", p1Only);
+  var rcx = $("#replychip"); if (rcx) rcx.classList.toggle("on", replyOnly);
 }
 
 var BLURB = {
@@ -655,6 +679,26 @@ function paintSlack() {
     '<div class="empty">Nothing open from Slack.</div>';
 }
 
+// Replies whose sender address did not match any firm on the board are parked
+// here by the instantly-reply webhook, so a reply from a personal address is
+// never lost. Find the firm by search, log the reply on it, then Mark handled.
+function unmatchedHtml() {
+  if (!UNMATCHED.length) return '<div class="empty">No unmatched replies — every reply matched a firm.</div>';
+  return UNMATCHED.map(function (u) {
+    return '<div class="slack" data-unmatched="' + u.id + '">' +
+      '<div class="txt">' + esc(u.email || "(no address)") + "</div>" +
+      '<div class="meta">' + esc(u.campaign || "") +
+        (u.campaign ? " &middot; " : "") + esc(when(u.received_at)) + "</div>" +
+      (u.snippet ? '<div class="why">' + esc(u.snippet) + "</div>" : "") +
+      '<div class="ctl"><span style="font-size:12px;color:var(--mute)">Reply from an address not on the board — find the firm in search above, log the reply on its card, then:</span>' +
+      '<button class="b" data-resolve>Mark handled</button></div></div>';
+  }).join("");
+}
+function paintUnmatched() {
+  var p = $("#unmatchedpanel");
+  if (p && !p.hidden) p.innerHTML = unmatchedHtml();
+}
+
 function firmView(f, w, v) {
   if (v === "mine")   return w.owner_email === me.email;
   if (v === "free")   return !w.owner_email && !CLOSED[w.status];
@@ -693,6 +737,11 @@ function counts() {
   var se = $("#t-slack"); if (se) se.textContent = open;
   var p1n = FIRMS.filter(function (f) { return isDirectCell(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
   var pe = $("#t-p1"); if (pe) pe.textContent = p1n;
+  var repn = FIRMS.filter(function (f) { return hasReply(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
+  var ree = $("#t-reply"); if (ree) ree.textContent = repn;
+  var rc = $("#replychip"); if (rc) rc.style.borderColor = repn ? "#1F7A3D" : "";
+  var ue = $("#t-unmatched"); if (ue) ue.textContent = UNMATCHED.length;
+  var ut = $("#unmatchedtoggle"); if (ut) ut.style.color = UNMATCHED.length ? "var(--red)" : "";
   var st = $("#slacktoggle"); if (st) st.style.color = open ? "var(--red)" : "";
 
   var acute = FIRMS.filter(function (f) { return f.priority === "ACUTE"; }).length;
@@ -745,13 +794,33 @@ function stateChips() {
 document.addEventListener("click", function (e) {
   var t = e.target;
   if (t.dataset && t.dataset.tier) {
-    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; stateChips(); render(); counts(); return; }
-  if (t.id === "p1cell") { p1Only = !p1Only; render(); counts(); return; }
+    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; stateChips(); render(); counts(); return; }
+  if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; render(); counts(); return; }
+  if (t.id === "replychip") { replyOnly = !replyOnly; p1Only = false; render(); counts(); return; }
   if (t.id === "slacktoggle") {
     var panel = $("#slackpanel");
     panel.hidden = !panel.hidden;
     paintSlack();
     t.classList.toggle("on", !panel.hidden);
+    return;
+  }
+  if (t.id === "unmatchedtoggle") {
+    var upn = $("#unmatchedpanel");
+    upn.hidden = !upn.hidden;
+    paintUnmatched();
+    t.classList.toggle("on", !upn.hidden);
+    return;
+  }
+  var ucard = t.closest && t.closest("[data-unmatched]");
+  if (ucard && t.dataset.resolve !== undefined) {
+    if (!me) { toast("Sign in first."); return; }
+    var uid = Number(ucard.dataset.unmatched);
+    sb.from("unmatched_replies").update({ resolved: true, resolved_by: me.email,
+      resolved_at: new Date().toISOString() }).eq("id", uid).then(function (r) {
+        if (r.error) { toast("Not saved: " + r.error.message); return; }
+        UNMATCHED = UNMATCHED.filter(function (u) { return u.id !== uid; });
+        paintUnmatched(); counts(); toast("Marked handled.");
+      });
     return;
   }
   var scard = t.closest && t.closest(".slack");
