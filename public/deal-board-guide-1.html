@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deal Board — Team Guide</title>
+<style>
+  :root{
+    --green:#00461C; --gold:#9D7D4F; --ink:#1f2420; --mute:#5c6560;
+    --line:#e4e0d6; --wash:#f6f4ee; --card:#ffffff; --good:#1f7a3d; --bad:#8a1c1c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:#eceae3;color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sheet{max-width:1040px;margin:0 auto;background:var(--card);
+    box-shadow:0 2px 20px rgba(0,0,0,.12);border-radius:6px;overflow:hidden}
+  /* header */
+  .hd{background:var(--green);color:#fff;padding:22px 30px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+  .hd .wm{font-family:Georgia,"Times New Roman",serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  .hd h1{font-family:Georgia,"Times New Roman",serif;font-weight:700;margin:4px 0 0;font-size:34px;line-height:1}
+  .hd p{margin:6px 0 0;font-size:13px;color:#cbdccb}
+  .hd .tag{text-align:right;font-size:11px;color:#a9c3ac;letter-spacing:.06em}
+  .rule{height:5px;background:var(--gold)}
+  .body{padding:24px 30px 10px}
+  h2{font-family:Georgia,serif;color:var(--green);font-size:16px;margin:0 0 12px;letter-spacing:.01em}
+  .sec{margin-bottom:22px}
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .step{background:var(--wash);border:1px solid var(--line);border-radius:6px;padding:12px 12px 13px;position:relative}
+  .step .n{width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-weight:700;
+    display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:8px}
+  .step h3{margin:0 0 4px;font-size:13.5px;color:var(--green)}
+  .step p{margin:0;font-size:12px;color:var(--mute);line-height:1.42}
+  /* two-col */
+  .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:22px}
+  /* mock card */
+  .mock{border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:6px;padding:12px 14px;background:#fff;position:relative}
+  .mock .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .mock .firm{font-weight:700;font-size:15px}
+  .badge{font:700 10px/1.4 ui-monospace,Menlo,monospace;padding:2px 7px;border:1px solid currentColor;border-radius:3px}
+  .b-p1{color:var(--green);background:#e7efe9}
+  .b-auto{color:var(--gold);background:#f3eee4}
+  .mock .who{color:var(--mute);font-size:12.5px;margin-top:5px}
+  .mock .acq{display:inline-block;margin-top:8px;font:700 10px/1.5 ui-monospace,monospace;color:var(--bad);background:#f4e4e4;border:1px solid var(--bad);padding:1px 7px;border-radius:3px}
+  .mock .btns{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fbfaf7;color:var(--ink)}
+  .chip.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .chip.new{border-color:var(--gold);color:var(--gold);font-weight:700}
+  .chip.bad{border-color:var(--bad);color:var(--bad)}
+  .mock .nextrow{margin-top:9px;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mute)}
+  .mock .nextrow input{border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-size:11px;color:#888;background:#fff}
+  /* callouts */
+  .callouts{list-style:none;margin:10px 0 0;padding:0}
+  .callouts li{display:flex;gap:8px;margin-bottom:9px;font-size:12.3px;line-height:1.45}
+  .callouts .k{flex:0 0 84px;font-weight:700;color:var(--green);font-family:ui-monospace,Menlo,monospace;font-size:11px}
+  .callouts .bad .k{color:var(--bad)}
+  /* action legend */
+  .legend{background:var(--wash);border:1px solid var(--line);border-radius:6px;padding:13px 15px}
+  .legend .row{display:flex;gap:8px;margin-bottom:9px;align-items:flex-start}
+  .legend .row:last-child{margin-bottom:0}
+  .legend .lab{flex:0 0 108px}
+  .legend .desc{font-size:12px;color:var(--mute);line-height:1.42}
+  .win{background:var(--green);color:#fff;border-radius:6px;padding:14px 16px;margin-top:14px;text-align:center}
+  .win .t{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  .win .h{font-family:Georgia,serif;font-size:19px;margin:4px 0 0;font-weight:700}
+  .win .s{font-size:11.5px;color:#cbdccb;margin-top:3px}
+  .note{font-size:11.5px;color:var(--mute);margin-top:12px;line-height:1.45;border-left:3px solid var(--gold);padding-left:10px}
+  /* rules bar */
+  .rules{background:#2a2f2b;color:#fff;padding:16px 30px;margin-top:8px}
+  .rules h2{color:var(--gold);margin:0 0 10px}
+  .rules ul{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:7px 26px}
+  .rules li{font-size:12.3px;line-height:1.4;padding-left:16px;position:relative;color:#e9ece9}
+  .rules li:before{content:"▪";position:absolute;left:0;color:var(--gold)}
+  .rules b{color:#fff}
+  .foot{padding:10px 30px 20px;font-size:10.5px;color:var(--mute);display:flex;justify-content:space-between}
+  @media print{body{background:#fff;padding:0}.sheet{box-shadow:none;border-radius:0;max-width:none}}
+  @media (max-width:760px){.steps{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}.rules ul{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="wm">Transworld Business Advisors</div>
+      <h1>Deal Board — Team Guide</h1>
+      <p>How to work the buy-side call list without stepping on each other.</p>
+    </div>
+    <div class="tag">Business Sales · Mergers &amp; Acquisitions · Franchises</div>
+  </div>
+  <div class="rule"></div>
+
+  <div class="body">
+
+    <div class="sec">
+      <h2>The flow — five steps, every firm</h2>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><h3>Sign in</h3><p>Your work email + your password. First time: click <b>Set my password</b>. Only the three of us have access.</p></div>
+        <div class="step"><div class="n">2</div><h3>Claim it</h3><p>Assign a firm to yourself before you dial. If it shows another name, it's taken — leave it. No double-dialing.</p></div>
+        <div class="step"><div class="n">3</div><h3>Read the card</h3><p>Check priority, the "ask for" name, and whether it's a seller or a competitor <em>(see below)</em>.</p></div>
+        <div class="step"><div class="n">4</div><h3>Make the call</h3><p>Work your state/region group in the best windows. Describe the buyer — never name them.</p></div>
+        <div class="step"><div class="n">5</div><h3>Log &amp; schedule</h3><p>Hit the outcome button and set the <b>Next</b> date + note so the follow-up doesn't get lost.</p></div>
+      </div>
+    </div>
+
+    <div class="sec cols">
+      <div>
+        <h2>How to read a card</h2>
+        <div class="mock">
+          <div class="top">
+            <span class="firm">Acme Land Surveying, LLC</span>
+            <span class="badge b-p1">P1 · 250</span>
+          </div>
+          <div class="who">Ask for <b>David</b> &nbsp;·&nbsp; (555) 201-8890 &nbsp;·&nbsp; Central FL &nbsp;·&nbsp; est. ~$2–4M</div>
+          <span class="acq">▲ ALREADY ACQUIRED = competitor, do not pitch</span>
+          <div class="btns">
+            <span class="chip on">Called</span><span class="chip">No answer</span>
+            <span class="chip">Left voicemail</span><span class="chip">Call back</span>
+            <span class="chip">Interested</span><span class="chip new">Emailed</span>
+            <span class="chip bad">Not for sale</span>
+          </div>
+          <div class="nextrow"><b>Next:</b><input value="2026-09-22" readonly><input value="send the letter, ask re: his partner" readonly style="min-width:150px"></div>
+        </div>
+        <ul class="callouts">
+          <li><span class="k">P1</span><span>A confirmed owner <b>direct dial</b> sits behind this firm — you're reaching the decision-maker, not a front desk.</span></li>
+          <li><span class="k">Ask for…</span><span>Only a first name is on file (surname masked until enrichment). A first name is enough to clear a gatekeeper.</span></li>
+          <li class="bad"><span class="k">est. $</span><span>Revenue is a <b>model estimate, not a filing</b> — sorts the list, never say it on a call.</span></li>
+          <li class="bad"><span class="k">ACQUIRED</span><span>Not a seller — that's who you're <b>bidding against</b>. Don't pitch them.</span></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2>Logging your action</h2>
+        <div class="legend">
+          <div class="row"><span class="chip on lab">Called / No answer</span><span class="desc">Standard call outcomes. "Call back" keeps it in your queue.</span></div>
+          <div class="row"><span class="chip new lab">Emailed</span><span class="desc">Log it when you hand-email a firm. This <b>pulls that firm out of the automated email sequence</b> so they never get both.</span></div>
+          <div class="row"><span class="badge b-auto lab" style="text-align:center">AUTO&nbsp;OFF</span><span class="desc">Appears once a firm is emailed or replies — automation is now off for them. A human owns the thread.</span></div>
+          <div class="row"><span class="chip bad lab">Not for sale / Do not call</span><span class="desc">Closes the card and stops all outreach. Use "Do not call" the moment they ask.</span></div>
+        </div>
+
+        <div class="win">
+          <div class="t">Best call windows</div>
+          <div class="h">7:00–8:15 am &nbsp;·&nbsp; 4:30–6:00 pm</div>
+          <div class="s">Owner-operators answer their own phone before and after the crew's day.</div>
+        </div>
+
+        <div class="note"><b>Only firms with a phone or email show.</b> Firms with no contact yet are hidden so the list stays a real call list — type a name in search to pull one up anyway. Log every reply to the board the same day.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="padding:20px 30px 6px;border-top:1px solid var(--line)">
+    <h2>Outreach scripts</h2>
+    <p style="font-size:12px;color:var(--mute);margin:0 0 13px;line-height:1.45">Full script, objections and text variants are in the Word doc <b>“The 60-Second Cold Call.”</b> Quick version here. Everywhere: describe the buyer, never name it; never say the estimate out loud.</p>
+    <div class="cols">
+      <div>
+        <h3 style="margin:0 0 8px;color:var(--green);font-size:13.5px">The 60-second call</h3>
+        <ul class="callouts">
+          <li><span class="k">OPEN</span><span>“This is a cold call — give me 20 seconds, then tell me to get lost.” <i>(honesty + control back)</i></span></li>
+          <li><span class="k">FRAME</span><span>“One NASDAQ-listed strategic buyer, not PE, active in your market. I’m not calling to list you.”</span></li>
+          <li><span class="k">DISARM</span><span>“I know how this sounds — like every broker who’s ever called you.”</span></li>
+          <li><span class="k">HOOK</span><span>“How much thought have you given to what happens to the firm when you’re ready to slow down?”</span></li>
+          <li><span class="k">STAKES</span><span>“The exit happens once — usually reactively, at the worst price. A buyer showing up while you’re strong is rare.”</span></li>
+          <li><span class="k">CLOSE</span><span>“15 confidential minutes, you decide after. What does Thursday look like?”</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin:0 0 8px;color:var(--green);font-size:13.5px">The text touch <span style="font-weight:400;color:var(--bad)">— manual, 1:1, after a call</span></h3>
+        <div style="font-size:11px;color:var(--bad);background:#f4e4e4;border:1px solid var(--bad);border-radius:5px;padding:8px 10px;margin-bottom:9px;line-height:1.4"><b>TCPA:</b> texting a cell is $500–$1,500 per text. Send by hand, one at a time, from your phone — never a blast, never a DNC number. The board’s <b>Copy text</b> button (P1 cards) fills it for you.</div>
+        <div style="font:12px/1.45 ui-monospace,Menlo,monospace;background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:8px 10px;margin-bottom:7px"><b style="font-family:inherit;color:var(--gold)">A · direct</b><br>[First] — Jason Curcio, Transworld. I represent one NASDAQ-listed strategic buyer (not PE) quietly acquiring survey/civil firms, and they’re active in your market. Not asking you to list — 15 confidential minutes so you’d know what [Firm] is worth to them. Worth a quick call this week? Reply STOP and you’ll never hear from me again.</div>
+        <div style="font:12px/1.45 ui-monospace,Menlo,monospace;background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:8px 10px;margin-bottom:7px"><b style="font-family:inherit;color:var(--gold)">B · curiosity</b><br>Hi [First] — Jason Curcio, Transworld M&amp;A. Blunt question: ever thought about what happens to [Firm] when you’re ready to step back? I represent a strategic buyer active in your space — might be worth a confidential 15 min. If not, tell me and I’m gone.</div>
+        <div style="font:12px/1.45 ui-monospace,Menlo,monospace;background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:8px 10px"><b style="font-family:inherit;color:var(--gold)">C · short</b><br>[First], Jason Curcio at Transworld. A NASDAQ-listed buyer I represent is quietly acquiring firms like yours nearby. Not a listing pitch — a confidential 15-min so you know your number before timing forces it. Open to it?</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rules">
+    <h2>Rules that don't bend</h2>
+    <ul>
+      <li><b>Never name the buyer</b> in outreach — describe the profile; the name is disclosed 1:1, under NDA.</li>
+      <li><b>Never quote the revenue estimate</b> on a call — it's a model number, not a fact.</li>
+      <li><b>Assign before you dial</b> — one caller per firm, always.</li>
+      <li><b>Hand-email = log "Emailed"</b> — that's what turns their automation off.</li>
+      <li><b>ALREADY ACQUIRED = competitor</b>, not a lead — skip it.</li>
+      <li><b>Log every reply same day</b> so the whole team sees it.</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <span>Transworld Business Advisors of Florida · buy-side mandate</span>
+    <span>Deal Board team guide</span>
+  </div>
+
+</div>
+</body>
+</html>
