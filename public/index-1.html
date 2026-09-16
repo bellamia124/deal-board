@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Deal Board</title>
+<style>
+:root{
+  --green:#00461C; --gold:#9D7D4F; --ink:#14120D; --grey:#4A4A42;
+  --mute:#77776C; --faint:#A39F92; --line:#DEDBD1; --bg:#F7F6F2;
+  --card:#ffffff; --red:#8A2B20; --blue:#4A6FA5; --wash:#F0EEE7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+a{color:var(--green)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 90px}
+
+header{border-bottom:3px solid var(--green);padding:26px 0 16px}
+h1{font:600 28px/1.1 Georgia,serif;color:var(--green);margin:0 0 4px}
+.sub{color:var(--mute);font-size:13px}
+.me{float:right;font-size:13px;color:var(--grey);text-align:right}
+.me b{color:var(--green)}
+.link{background:none;border:none;color:var(--mute);font:inherit;font-size:12px;
+ text-decoration:underline;cursor:pointer;padding:0}
+.guidebtn{display:inline-block;margin-top:9px;background:var(--green);color:#fff;
+ text-decoration:none;font-size:12px;font-weight:600;padding:5px 12px;border-radius:4px;
+ border:1px solid var(--green);letter-spacing:.02em;white-space:nowrap}
+.guidebtn:hover{background:#00591f;border-color:#00591f}
+
+/* ---- sign in ---- */
+#gate{max-width:430px;margin:9vh auto;background:var(--card);
+ border:1px solid var(--line);padding:34px 32px}
+#gate h1{font-size:25px;margin-bottom:6px}
+#gate p{color:var(--grey);font-size:14px}
+#gate input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);
+ margin:14px 0 12px;background:#fff}
+#gate button{width:100%;font:inherit;font-weight:600;padding:11px;border:0;
+ background:var(--green);color:#fff;cursor:pointer}
+#gate button:disabled{opacity:.5;cursor:default}
+.msg{font-size:13px;margin-top:14px;padding:10px 12px}
+.msg.ok{background:#EDF4EE;color:var(--green);border:1px solid #BFD8C6}
+.msg.err{background:#FBEFED;color:var(--red);border:1px solid #E5C4BF}
+
+/* ---- tiles ---- */
+.tiles{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 6px}
+.tile{flex:1 1 130px;background:var(--card);border:1px solid var(--line);padding:13px 15px}
+.tile .n{font:600 26px/1 Georgia,serif;color:var(--green)}
+.tile .n.hot{color:var(--red)}
+.tile .l{font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--mute);margin-top:5px}
+
+/* ---- toolbar ---- */
+.board{position:sticky;top:0;z-index:30;background:var(--bg);
+ border-bottom:1px solid var(--line);padding:10px 0 8px;margin:16px 0 6px}
+.row{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.chip{font:inherit;font-size:13px;padding:4px 11px;border:1px solid var(--line);
+ background:#fff;color:var(--grey);cursor:pointer}
+.chip:hover{border-color:var(--gold)}
+.chip.on{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+.chip .k{color:var(--faint);margin-left:6px;font-weight:400}
+.chip.on .k{color:#BFD8C6}
+.gap{flex:1}
+#search{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--line);
+ min-width:190px;background:#fff}
+
+/* ---- state sections ---- */
+h3.st{font:600 15px Georgia,serif;color:var(--green);margin:24px 0 8px;
+ padding-bottom:4px;border-bottom:1px solid var(--line)}
+h3.st .k{font:400 12px -apple-system,sans-serif;color:var(--mute);
+ letter-spacing:.05em;margin-left:8px}
+
+/* ---- cards ---- */
+.call{background:var(--card);border:1px solid var(--line);
+ border-left:5px solid var(--gold);padding:14px 18px;margin-bottom:9px}
+.call.acute{border-left-color:var(--red)}
+.call.claimed{border-left-color:var(--blue)}
+.call.closed{opacity:.55}
+.call.closed .firm{text-decoration:line-through}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:9px}
+.firm{font-weight:700;font-size:17px}
+.badge{font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+ border:1px solid currentColor;padding:1px 7px;color:var(--gold)}
+.badge.acute{color:var(--red)}
+.who{color:var(--grey);font-size:14px;margin-top:5px}
+.who .sep{color:var(--faint)}
+.tel{font-weight:700;font-family:ui-monospace,Menlo,monospace;text-decoration:none;
+ border-bottom:1px solid #BFD8C6;color:var(--green)}
+.est{color:var(--gold);font-size:12px}
+.rev{color:var(--green);font-weight:700}
+.band{display:inline-block;font:700 10px/1.5 ui-monospace,Menlo,monospace;
+ padding:1px 6px;margin-left:5px;vertical-align:2px;border:1px solid currentColor}
+.band.P1{color:#1F7A3D;background:#EAF6EE}
+.band.P2{color:#7A5A12;background:#FBF3E0}
+.band.P3{color:#6B6B6B;background:#F2F1EE}
+.band.P4{color:#8A8A8A}
+.band.REP{color:#fff;background:#1F7A3D;border-color:#1F7A3D}
+.askfor{color:var(--green);font-weight:700}
+.nonum{color:var(--faint);font-style:italic}
+.addr{color:var(--mute);font-size:13px;margin-top:3px}
+.why{margin-top:8px;padding-top:8px;border-top:1px solid #EEEBE3;font-size:14px;
+ color:var(--grey)}
+
+.ctl{margin-top:10px;padding-top:9px;border-top:1px solid #EEEBE3;
+ display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ctl select,.ctl input{font:inherit;font-size:13px;padding:4px 7px;
+ border:1px solid var(--line);background:#fff;color:var(--ink)}
+.ctl input[type=text]{flex:1 1 200px;min-width:0}
+.b{font:inherit;font-size:12px;padding:4px 9px;border:1px solid var(--line);
+ background:#fff;color:var(--grey);cursor:pointer}
+.b:hover{border-color:var(--green);color:var(--green)}
+.b.on{background:var(--green);border-color:var(--green);color:#fff}
+.b.bad.on{background:var(--red);border-color:var(--red)}
+.owner{font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;
+ border:1px solid var(--blue);color:var(--blue);font-weight:600;white-space:nowrap}
+.owner.mine{background:var(--blue);color:#fff}
+.owner.none{border-color:var(--line);color:var(--faint)}
+.due{font-size:12px;color:var(--red);font-weight:600}
+.due.ok{color:var(--grey);font-weight:400}
+details.log{margin-top:8px;font-size:13px;color:var(--grey)}
+details.log summary{cursor:pointer;color:var(--mute);font-size:12px}
+details.log ul{margin:6px 0 0;padding-left:16px}
+details.log li{margin-bottom:2px}
+details.log .t{color:var(--faint)}
+.note{background:var(--wash);border:1px solid var(--line);padding:11px 14px;
+ font-size:14px;color:var(--grey);margin:14px 0}
+.slack{background:var(--card);border:1px solid var(--line);
+ border-left:5px solid #4A154B;padding:12px 16px;margin:8px 0}
+.slack.done{opacity:.5}
+.slack.done .txt{text-decoration:line-through}
+.slack .meta{color:var(--mute);font-size:12.5px;margin-top:4px}
+.slack .meta a{color:var(--green)}
+.slack .b{margin-top:8px}
+.empty{background:var(--wash);border:1px solid var(--line);padding:14px 16px;
+ color:var(--grey);font-size:14px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+ background:var(--ink);color:#fff;padding:9px 17px;font-size:13px;z-index:99;display:none}
+footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
+ color:var(--mute);font-size:12px;text-align:right}
+@media (max-width:640px){.me{float:none;text-align:left;margin-top:8px}}
+</style>
+</head>
+<body>
+
+<div id="gate" hidden>
+  <h1>Deal Board</h1>
+  <p>Transworld Business Advisors of Florida &middot; buy-side mandate</p>
+  <p style="font-size:13px">Only the three invited work addresses can get in.
+     First time here? Enter your email, pick a password, and press
+     <b>Set my password</b>.</p>
+  <input id="email" type="email" placeholder="you@tworld.com" autocomplete="username">
+  <input id="pw" type="password" placeholder="password" autocomplete="current-password">
+  <button id="signin">Sign in</button>
+  <button id="signup" style="background:#fff;color:var(--green);border:1px solid var(--green);margin-top:8px">Set my password (first time)</button>
+  <div id="gatemsg"></div>
+</div>
+
+<div id="app" hidden>
+<div class="wrap">
+  <header>
+    <div class="me">Signed in as <b id="whoami"></b><br>
+      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a></div>
+    <h1>Deal Board</h1>
+    <div class="sub">Buy-side mandate · <span id="stamp"></span></div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="board">
+    <div class="row" style="margin-bottom:7px">
+      <button class="chip tierchip" data-tier="1">Today's calls<span class="k" id="t-1">0</span></button>
+      <button class="chip tierchip" data-tier="2">Tier 2<span class="k" id="t-2">0</span></button>
+      <button class="chip tierchip" data-tier="3">Tier 3 — watch list<span class="k" id="t-3">0</span></button>
+      <span class="gap"></span>
+      <button class="chip" id="slacktoggle">From Slack<span class="k" id="t-slack">0</span></button>
+      <button class="chip" id="unmatchedtoggle">Unmatched replies<span class="k" id="t-unmatched">0</span></button>
+      <button class="chip" id="replychip" style="border-color:#1F7A3D;color:#1F7A3D;font-weight:600">✉ Replied<span class="k" id="t-reply">0</span></button>
+      <button class="chip" id="p1cell" style="border-color:var(--gold);color:var(--green);font-weight:600">☎ P1 · direct cell<span class="k" id="t-p1">0</span></button>
+    </div>
+    <div class="row">
+      <button class="chip" data-view="all">Everything<span class="k" id="n-all">0</span></button>
+      <button class="chip" data-view="free">Unclaimed<span class="k" id="n-free">0</span></button>
+      <button class="chip" data-view="due">Due<span class="k" id="n-due">0</span></button>
+      <button class="chip" data-view="worked">Worked<span class="k" id="n-worked">0</span></button>
+      <span class="gap"></span>
+      <input id="search" type="search" placeholder="find a company, town or person">
+    </div>
+    <div class="row" id="brokers" style="margin-top:7px"></div>
+    <div class="row" id="states" style="margin-top:7px"></div>
+  </div>
+
+  <div id="slackpanel" hidden></div>
+  <div id="unmatchedpanel" hidden></div>
+  <div id="tierblurb" class="note" hidden></div>
+  <div id="list"></div>
+  <footer id="foot"></footer>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="./config.js"></script>
+<script>
+(function () {
+"use strict";
+
+var CFG = window.DEAL_BOARD_CONFIG || {};
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+
+function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+function toast(m) {
+  var t = $("#toast"); t.textContent = m; t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; }, 3400);
+}
+function today() { return new Date().toISOString().slice(0, 10); }
+function when(iso) {
+  try { var d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
+           d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  } catch (e) { return iso; }
+}
+function money(n) {
+  if (n == null || n === "") return "";
+  return "$" + Number(n).toLocaleString();
+}
+
+var STATES = { FL:"Florida", CA:"California", TX:"Texas", CO:"Colorado",
+  VA:"Virginia", AZ:"Arizona", GA:"Georgia", NC:"North Carolina",
+  SC:"South Carolina", TN:"Tennessee", WA:"Washington", OH:"Ohio" };
+
+var STATUSES = [
+  ["Calling",       "Called",        false],
+  ["No answer",     "No answer",     false],
+  ["Left voicemail","Voicemail",     false],
+  ["Call back",     "Call back",     false],
+  ["Interested",    "Interested",    false],
+  ["Emailed",       "emailed (manual)", false],
+  ["Not for sale",  "Not for sale",  true ],
+  ["Do not call",   "Do not call",   true ]
+];
+var CLOSED = { "Not for sale": 1, "Do not call": 1 };
+
+var SLACK_STATUSES = [
+  ["Working",  "Working",  false],
+  ["Waiting",  "Waiting on them", false],
+  ["Done",     "Done",     true ],
+  ["Dropped",  "Dropped",  true ]
+];
+var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
+
+var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
+    UNMATCHED = [],
+    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false;
+
+// ---------------------------------------------------------------- sign in
+function showGate(msg, kind) {
+  $("#app").hidden = true; $("#gate").hidden = false;
+  if (msg) $("#gatemsg").innerHTML = '<div class="msg ' + (kind || "err") + '">' + esc(msg) + "</div>";
+}
+
+function creds() {
+  return { email: $("#email").value.trim(), password: $("#pw").value };
+}
+function gateBusy(on) {
+  $("#signin").disabled = on; $("#signup").disabled = on;
+}
+
+$("#signin").addEventListener("click", function () {
+  var c = creds();
+  if (!c.email || !c.password) { showGate("Enter your email and password.", "err"); return; }
+  gateBusy(true);
+  sb.auth.signInWithPassword(c).then(function (r) {
+    gateBusy(false);
+    if (r.error) {
+      showGate(r.error.message === "Invalid login credentials"
+        ? "That email and password did not match. If this is your first time, use \u201cSet my password\u201d instead."
+        : r.error.message, "err");
+    }
+    // success is handled by onAuthStateChange
+  });
+});
+
+$("#signup").addEventListener("click", function () {
+  var c = creds();
+  if (!c.email || !c.password) { showGate("Enter your email and choose a password.", "err"); return; }
+  if (c.password.length < 8) { showGate("Use at least 8 characters.", "err"); return; }
+  gateBusy(true);
+  sb.auth.signUp(c).then(function (r) {
+    gateBusy(false);
+    if (!r.error) return;                       // signed in via onAuthStateChange
+    if (/already registered/i.test(r.error.message)) {
+      showGate("That address already has a password. Use Sign in, or ask Jason to reset it.", "err");
+    } else {
+      showGate(r.error.message, "err");
+    }
+  });
+});
+
+$("#pw").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#signin").click(); });
+$("#email").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#pw").focus(); });
+document.addEventListener("click", function (e) {
+  if (e.target && e.target.id === "signout") sb.auth.signOut().then(function () { location.reload(); });
+});
+
+// ---------------------------------------------------------------- loading
+// PostgREST caps a single read at 1000 rows. The list is past that now, so
+// every table is paged until a short page comes back. Without this the board
+// would silently show the first thousand firms and look complete.
+function fetchAll(table, order, asc) {
+  var out = [], size = 1000;
+  function page(from) {
+    var q = sb.from(table).select("*");
+    if (order) q = q.order(order, { ascending: !!asc });
+    return q.range(from, from + size - 1).then(function (r) {
+      if (r.error) throw r.error;
+      out = out.concat(r.data || []);
+      if ((r.data || []).length < size) return out;
+      return page(from + size);
+    });
+  }
+  return page(0);
+}
+
+function load() {
+  return Promise.all([
+    sb.from("team").select("*").eq("active", true),
+    fetchAll("firms", "score", false),
+    fetchAll("work"),
+    fetchAll("activity", "at", true),
+    sb.from("slack_actions").select("*").order("id"),
+    fetchAll("slack_activity", "at", true),
+    sb.from("enrichment_queue").select("*"),
+    sb.from("unmatched_replies").select("*").eq("resolved", false).order("received_at", { ascending: false })
+  ]).then(function (r) {
+    if (r[0].error) throw r[0].error;
+    team  = r[0].data || [];
+    FIRMS = r[1];
+    WORK  = {}; r[2].forEach(function (w) { WORK[w.firm_id] = w; });
+    LOG   = {}; r[3].forEach(function (a) {
+      (LOG[a.firm_id] = LOG[a.firm_id] || []).push(a); });
+    SLACK = (r[4] && r[4].data) || [];
+    SLOG  = {}; (r[5] || []).forEach(function (a) {
+      (SLOG[a.action_id] = SLOG[a.action_id] || []).push(a); });
+    QUEUE = {};
+    ((r[6] && r[6].data) || []).forEach(function (q) {
+      if (q.firm_id) QUEUE[q.firm_id] = q; });
+    UNMATCHED = (r[7] && r[7].data) || [];
+  });
+}
+
+function subscribe() {
+  sb.channel("board")
+    .on("postgres_changes", { event: "*", schema: "public", table: "work" }, function (p) {
+      if (p.eventType === "DELETE") delete WORK[p.old.firm_id];
+      else WORK[p.new.firm_id] = p.new;
+      renderOne(p.new ? p.new.firm_id : p.old.firm_id); counts();
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "slack_activity" }, function (p) {
+      (SLOG[p.new.action_id] = SLOG[p.new.action_id] || []).push(p.new); paintSlack();
+    })
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "slack_actions" }, function (p) {
+      for (var i = 0; i < SLACK.length; i++) if (SLACK[i].id === p.new.id) SLACK[i] = p.new;
+      paintSlack(); counts();
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity" }, function (p) {
+      var a = p.new; (LOG[a.firm_id] = LOG[a.firm_id] || []).push(a); renderOne(a.firm_id); counts();
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "unmatched_replies" }, function (p) {
+      if (p.new && !p.new.resolved) { UNMATCHED.unshift(p.new); paintUnmatched(); counts(); }
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "firms" }, function (p) {
+      // enrichment (phones/emails/principals, incl. the daily monitor's writes) lands live — no reload
+      if (p.eventType === "DELETE") {
+        FIRMS = FIRMS.filter(function (x) { return x.firm_id !== p.old.firm_id; });
+        render(); counts(); return;
+      }
+      var row = p.new, hit = false;
+      for (var i = 0; i < FIRMS.length; i++) { if (FIRMS[i].firm_id === row.firm_id) { FIRMS[i] = row; hit = true; break; } }
+      if (hit) { renderOne(row.firm_id); counts(); }
+      else { FIRMS.push(row); render(); counts(); }   // brand-new firm
+    })
+    .subscribe();
+}
+
+// ---------------------------------------------------------------- writing
+function nameOf(email) {
+  var t = team.filter(function (x) { return x.email === email; })[0];
+  return t ? t.full_name : (email || "");
+}
+
+function saveWork(fid, patch, what, note) {
+  var cur = WORK[fid] || { firm_id: fid };
+  var row = {
+    firm_id: fid,
+    owner_email: "owner_email" in patch ? patch.owner_email : (cur.owner_email || null),
+    status:      "status"      in patch ? patch.status      : (cur.status || "Not started"),
+    next_date:   "next_date"   in patch ? patch.next_date   : (cur.next_date || null),
+    next_note:   "next_note"   in patch ? patch.next_note   : (cur.next_note || null),
+    updated_at: new Date().toISOString(),
+    updated_by: me.email
+  };
+  WORK[fid] = row; renderOne(fid); counts();          // optimistic
+  sb.from("work").upsert(row, { onConflict: "firm_id" }).then(function (r) {
+    if (r.error) { toast("Not saved: " + r.error.message); return; }
+    if (what) {
+      var a = { firm_id: fid, by_email: me.email, what: what, note: note || null };
+      sb.from("activity").insert(a).then(function (r2) {
+        if (r2.error) toast("Saved, but the history line did not: " + r2.error.message);
+      });
+    }
+  });
+}
+
+// ---------------------------------------------------------------- rendering
+function isDirectCell(f){ return !!(f.phone_type && f.phone_type.toUpperCase().indexOf("CELL") >= 0); } // a true personal cell; office/main lines are not "direct cell"
+// parse the model revenue estimate to a sortable number: range -> midpoint,
+// K/M/B expanded, "$1M+" -> 1,000,000, missing/unparseable -> -1 (sinks to bottom).
+function revNum(f){
+  var s = f && f.revenue_estimate ? String(f.revenue_estimate) : ""; if(!s) return -1;
+  var vals=[], re=/\$?\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*([KkMmBb])?/g, m;
+  while((m=re.exec(s))){ var n=parseFloat(m[1].replace(/,/g,"")); if(isNaN(n))continue;
+    var suf=(m[2]||"").toUpperCase(); if(suf==="K")n*=1e3; else if(suf==="M")n*=1e6; else if(suf==="B")n*=1e9; vals.push(n); }
+  if(!vals.length) return -1;
+  return vals.length>=2 ? (vals[0]+vals[1])/2 : vals[0];
+}
+function hasReply(f){
+  var w = WORK[f.firm_id] || {};
+  if (w.auto_hold_reason && /repl/i.test(w.auto_hold_reason)) return true;
+  var lg = LOG[f.firm_id] || [];
+  for (var i = 0; i < lg.length; i++) { if (/repl/i.test(lg[i].what || "")) return true; }
+  return false;
+}
+function firstNameOf(f){ var p=(f.principal||"").trim(); if(!p) return "there"; var t=p.split(/[ (,\-]/)[0]; return t||"there"; }
+function smsText(f){ var fn=firstNameOf(f), co=f.company||"your firm";
+  return fn+" \u2014 Jason Curcio, Transworld. I represent one NASDAQ-listed strategic buyer (not PE) quietly acquiring survey/civil firms, and they\u2019re active in your market. Not asking you to list \u2014 15 confidential minutes so you\u2019d know what "+co+" is worth to them. Worth a quick call this week? Reply STOP and you\u2019ll never hear from me again."; }
+function contactable(f){
+  var w = WORK[f.firm_id] || {};
+  // reachable = has a phone/email, OR is already in play (claimed / worked / scheduled follow-up)
+  return !!(f.phone || f.email || w.owner_email || (w.status && w.status !== "Not started") || w.next_date);
+}
+function inPlay(f){
+  var w = WORK[f.firm_id] || {};
+  return !!(w.owner_email || (w.status && w.status !== "Not started") || w.next_date);
+}
+// what a browse view (tiers/Today's calls) shows + counts: reachable, and has a
+// principal name — unless it's already claimed/worked/scheduled (never hide work in progress).
+function browseable(f){
+  if (!contactable(f)) return false;
+  // require a known principal ONLY on the tier-1 call list; tier 2/3 are broad
+  // prospecting pools that are worth showing on company + a phone/email alone.
+  if ((f.tier || 1) === 1 && !f.principal && !inPlay(f)) return false;
+  return true;
+}
+function visible(f) {
+  var w = WORK[f.firm_id] || {};
+  if (p1Only) {
+    if (!isDirectCell(f)) return false;
+    if (q) { var h2=(f.company+" "+f.city+" "+f.principal+" "+f.state).toLowerCase(); if (h2.indexOf(q)<0) return false; }
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+    return !CLOSED[w.status];
+  }
+  if (replyOnly) {
+    if (!hasReply(f)) return false;
+    if (q) { var h3=(f.company+" "+f.city+" "+f.principal+" "+f.state).toLowerCase(); if (h3.indexOf(q)<0) return false; }
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+    return !CLOSED[w.status];
+  }
+  if (!browseable(f) && !q) return false;  // hide untouched no-contact AND principal-unknown firms; a claimed/worked/scheduled firm always shows, and search still finds anything
+  if ((f.tier || 1) !== tier) return false;
+  if (q) {
+    var hay = (f.company + " " + f.city + " " + f.principal + " " + f.state).toLowerCase();
+    if (hay.indexOf(q) < 0) return false;
+  }
+  if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+  if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
+  if (view === "mine")   return w.owner_email === me.email;
+  if (view === "free")   return !w.owner_email && !CLOSED[w.status];
+  if (view === "due")    return !!(w.next_date && w.next_date <= today());
+  if (view === "worked") return !!(w.status && w.status !== "Not started");
+  return !CLOSED[w.status];
+}
+
+function card(f) {
+  var w = WORK[f.firm_id] || {}, log = LOG[f.firm_id] || [];
+  var cls = "call" + (f.priority === "ACUTE" ? " acute" : "") +
+            (w.owner_email ? " claimed" : "") + (CLOSED[w.status] ? " closed" : "");
+  var bits = [], eq = QUEUE[f.firm_id];
+  if (f.principal) {
+    bits.push('ask for <span class="askfor">' + esc(f.principal) + '</span>' +
+      (eq ? ' <span class="band ' + esc(eq.band) + '">' + esc(eq.band) +
+            (eq.direct_dial === "yes" ? " direct dial" : " dial unsure") + '</span>' : ''));
+  } else {
+    bits.push('<span class="nonum">principal unknown</span>');
+  }
+  bits.push(esc((f.city || "") + ", " + (f.state || "")));
+  if (f.phone) bits.push('<a class="tel" href="tel:' + esc(String(f.phone).replace(/\s/g, "")) +
+      '">' + esc(f.phone) + '</a> <span class="est">' + esc(f.phone_type || "office") + "</span>");
+  else bits.push('<span class="nonum">no number yet</span>');
+  if (f.email) bits.push('<a href="mailto:' + esc(f.email) + '">' + esc(f.email) + "</a>");
+  if (f.website) bits.push('<a href="https://' + esc(String(f.website).replace(/^https?:\/\//, "")) +
+      '" target="_blank" rel="noopener">' + esc(f.website) + "</a>");
+  if (f.staff) bits.push("<b>" + esc(f.staff) + " staff</b>");
+  if (f.revenue_estimate) bits.push('<span class="rev">' + esc(f.revenue_estimate) + '</span>');
+  if (f.line_of_work) bits.push("<i>" + esc(f.line_of_work) + "</i>");
+
+  var owner = w.owner_email
+    ? '<span class="owner' + (w.owner_email === me.email ? " mine" : "") + '">' +
+      esc(nameOf(w.owner_email)) + "</span>"
+    : '<span class="owner none">unclaimed</span>';
+
+  var opts = ['<option value="">assign to…</option>'].concat(team.map(function (t) {
+    return '<option value="' + esc(t.email) + '"' +
+      (w.owner_email === t.email ? " selected" : "") + ">" + esc(t.full_name) + "</option>";
+  })).join("");
+
+  var btns = STATUSES.map(function (s) {
+    return '<button class="b' + (s[2] ? " bad" : "") + (w.status === s[0] ? " on" : "") +
+      '" data-status="' + esc(s[0]) + '">' + esc(s[1]) + "</button>";
+  }).join("");
+
+  var dueTxt = "", dueCls = "due";
+  if (w.next_date) {
+    var late = w.next_date <= today();
+    dueTxt = (late ? "due " : "scheduled ") + w.next_date;
+    if (!late) dueCls = "due ok";
+  }
+
+  var hist = log.length
+    ? log.slice().reverse().map(function (a) {
+        return "<li><span class='t'>" + esc(when(a.at)) + "</span> — <b>" +
+          esc(nameOf(a.by_email)) + "</b> " + esc(a.what) +
+          (a.note ? ": " + esc(a.note) : "") + "</li>"; }).join("")
+    : "<li class='t'>Nothing recorded yet.</li>";
+
+  return '<div class="' + cls + '" data-fid="' + esc(f.firm_id) + '">' +
+    '<div class="top"><span class="firm">' + esc(f.company) + "</span>" +
+    '<span class="badge' + (f.priority === "ACUTE" ? " acute" : "") + '">' +
+      esc(f.priority || "") + " · " + esc(f.score == null ? "" : f.score) + "</span>" + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
+    '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
+    ((f.address || f.city) ? '<div class="addr">' + esc([f.address, f.city, f.state].filter(Boolean).join(", ")) + "</div>" : "") +
+    (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
+    '<div class="ctl">' + '<select data-assign>' + opts + "</select>" + btns + "</div>" +
+    '<div class="ctl"><label style="font-size:12px;color:var(--mute)">Next</label>' +
+      '<input type="date" data-date value="' + esc(w.next_date || "") + '">' +
+      '<input type="text" data-note placeholder="what happens next — “send the letter”, “ask about his partner”" value="' +
+        esc(w.next_note || "") + '">' +
+      '<button class="b" data-save>Set</button>' +
+      '<span class="' + dueCls + '">' + esc(dueTxt) + "</span></div>" +
+    '<div class="ctl"><label style="font-size:12px;color:var(--mute)">What happened?</label>' +
+      '<input type="text" data-hap placeholder="the objection / how the dial went \u2014 \u201cnot interested\u201d, \u201casked who the buyer is\u201d" style="flex:1;min-width:200px">' +
+      '<button class="b" data-log>Log</button></div>' +
+    (isDirectCell(f) && (f.phone_type||"").toUpperCase().indexOf("DNC") < 0 ?
+      '<div class="ctl"><button class="b" data-sms>\ud83d\udcac Copy text</button>' +
+      '<span style="font-size:11px;color:var(--mute)">1:1 only \u00b7 send from your phone \u00b7 never a blast</span></div>' : '') +
+    '<details class="log"><summary>Activity' + (log.length ? " (" + log.length + ")" : "") +
+      "</summary><ul>" + hist + "</ul></details>" +
+    "</div>";
+}
+
+function renderOne(fid) {
+  var el = $('.call[data-fid="' + (window.CSS && CSS.escape ? CSS.escape(fid) : fid) + '"]');
+  if (!el) { render(); return; }
+  var f = FIRMS.filter(function (x) { return x.firm_id === fid; })[0];
+  if (!f) return;
+  var open = $("details.log", el) && $("details.log", el).open;
+  el.outerHTML = card(f);
+  if (open) { var n = $('.call[data-fid="' + (window.CSS && CSS.escape ? CSS.escape(fid) : fid) + '"] details.log');
+    if (n) n.open = true; }
+}
+
+function render() {
+  var shown = FIRMS.filter(visible);
+  // rank by gross-revenue estimate (desc), score as tie-break; done BEFORE the
+  // 400-cap so a capped list keeps the highest-value firms, and each state group
+  // below inherits this revenue order.
+  shown.sort(function (a, b) { return revNum(b) - revNum(a) || (b.score || 0) - (a.score || 0); });
+  // Tier 2 runs to about 1,750 names. Drawing every card at once takes seconds
+  // and makes the page feel broken, so the highest-scoring 400 are drawn and
+  // the rest are reachable by picking a state or searching. Say so plainly
+  // rather than letting it look like the list simply ends.
+  var CAP = 400, capped = 0;
+  if (shown.length > CAP) { capped = shown.length - CAP; shown = shown.slice(0, CAP); }
+  var by = {};
+  shown.forEach(function (f) { (by[f.state || "??"] = by[f.state || "??"] || []).push(f); });
+  var order = Object.keys(by).sort(function (a, b) { return by[b].length - by[a].length; });
+  var h = order.map(function (st) {
+    return '<h3 class="st">' + esc(STATES[st] || st) +
+      '<span class="k">' + by[st].length + " showing</span></h3>" +
+      by[st].map(card).join("");
+  }).join("");
+  $("#list").innerHTML = (h || 
+    '<div class="empty">Nothing matches these filters. Widen to <b>All brokers</b>, <b>All states</b>, or <b>Everything</b> — or clear the search.</div>') +
+    (capped ? '<div class="note"><b>' + capped.toLocaleString() + ' more not shown.</b> ' +
+      'The highest-scoring 400 are drawn so the page stays quick \u2014 pick a state ' +
+      'above, or search, to reach the rest.</div>' : "");
+  var bl = $("#tierblurb");
+  bl.textContent = BLURB[tier] || ""; bl.hidden = !BLURB[tier];
+  $$(".tierchip").forEach(function (c) {
+    c.classList.toggle("on", Number(c.dataset.tier) === tier); });
+  $$("#states .chip").forEach(function (c) {
+    c.classList.toggle("on", c.dataset.st === stateFilter); });
+  $$(".board [data-view]").forEach(function (c) {
+    c.classList.toggle("on", c.dataset.view === view); });
+  $$("#brokers .chip").forEach(function (c) {
+    c.classList.toggle("on", c.dataset.owner === ownerFilter); });
+  var pcx = $("#p1cell"); if (pcx) pcx.classList.toggle("on", p1Only);
+  var rcx = $("#replychip"); if (rcx) rcx.classList.toggle("on", replyOnly);
+}
+
+var BLURB = {
+  1: "Tier 1 \u2014 best-fit targets (model estimate). Every firm here clears $1M+ gross revenue " +
+     "and 11\u2013200 staff on the model's estimate, cross-checked against headcount. " +
+     "That revenue figure is a MODEL ESTIMATE, not a filing \u2014 never quote it on a call. " +
+     "Where a card says ask for a first name, only the first name is on file and the surname " +
+     "is masked until enrichment; a first name is still enough to get past a gatekeeper. " +
+     "P1 means an owner with a confirmed direct dial sits behind that firm. Cards reading " +
+     "ALREADY ACQUIRED are not sellers \u2014 they are who you are bidding against. " +
+     "Best hours 7:00\u20138:15 am and 4:30\u20136:00 pm.",
+  2: "Tier 2 \u2014 proven adjacent buys: building inspection, power and pressure " +
+     "washing, testing labs, specialty exterior trades, and flight schools. " +
+     "The buyer has bought in every one of these lines. Work these after tier 1, " +
+     "not instead of it. Flight schools are Matt's and nobody else's.",
+  3: "Tier 3 \u2014 the licence-roster pool, moved here 3 September. These came off state " +
+     "licence rosters, so most are one- and two-person practices and many are individuals " +
+     "rather than companies. Not junk, but none clear the $1M revenue floor on current " +
+     "information. Look a business up before you spend a call on it."
+};
+
+function saveSlack(id, patch, what, note) {
+  var row = SLACK.filter(function (a) { return a.id === id; })[0];
+  if (!row) return;
+  Object.keys(patch).forEach(function (k) { row[k] = patch[k]; });
+  row.updated_at = new Date().toISOString();
+  row.updated_by = me.email;
+  if (what) {
+    (SLOG[id] = SLOG[id] || []).push({
+      action_id: id, at: row.updated_at, by_email: me.email, what: what, note: note || null });
+  }
+  paintSlack(); counts();
+  var body = {};
+  Object.keys(patch).forEach(function (k) { body[k] = patch[k]; });
+  body.updated_at = row.updated_at; body.updated_by = me.email;
+  sb.from("slack_actions").update(body).eq("id", id).then(function (r) {
+    if (r.error) { toast("Not saved: " + r.error.message); return; }
+    if (what) {
+      sb.from("slack_activity").insert({
+        action_id: id, by_email: me.email, what: what, note: note || null
+      }).then(function (r2) {
+        if (r2.error) toast("Saved, but the history line did not: " + r2.error.message);
+      });
+    }
+  });
+}
+
+function slackCard(a) {
+  var log = SLOG[a.id] || [];
+  var closed = !!SLACK_CLOSED[a.status];
+  var txt = a.link
+    ? '<a href="' + esc(a.link) + '" target="_blank" rel="noopener">' + esc(a.item) + "</a>"
+    : esc(a.item);
+
+  var owner = a.owner_email
+    ? '<span class="owner' + (a.owner_email === me.email ? " mine" : "") + '">' +
+      esc(nameOf(a.owner_email)) + "</span>"
+    : '<span class="owner none">unclaimed</span>';
+
+  var opts = ['<option value="">assign to\u2026</option>'].concat(team.map(function (t) {
+    return '<option value="' + esc(t.email) + '"' +
+      (a.owner_email === t.email ? " selected" : "") + ">" + esc(t.full_name) + "</option>";
+  })).join("");
+
+  var btns = SLACK_STATUSES.map(function (st) {
+    return '<button class="b' + (st[2] ? " bad" : "") + (a.status === st[0] ? " on" : "") +
+      '" data-sstatus="' + esc(st[0]) + '">' + esc(st[1]) + "</button>";
+  }).join("");
+
+  var dueTxt = "", dueCls = "due";
+  if (a.next_date) {
+    var late = a.next_date <= today();
+    dueTxt = (late ? "due " : "scheduled ") + a.next_date;
+    if (!late) dueCls = "due ok";
+  }
+
+  var hist = log.length
+    ? log.slice().reverse().map(function (e) {
+        return "<li><span class='t'>" + esc(when(e.at)) + "</span> \u2014 <b>" +
+          esc(nameOf(e.by_email)) + "</b> " + esc(e.what) +
+          (e.note ? ": " + esc(e.note) : "") + "</li>"; }).join("")
+    : "<li class='t'>Nothing recorded yet.</li>";
+
+  return '<div class="slack' + (closed ? " done" : "") + '" data-slack="' + a.id + '">' +
+    '<div class="txt">' + txt + "</div>" +
+    '<div class="meta">' + esc(a.who || "") + " &middot; " + esc(a.channel || "") +
+      " &middot; " + esc(a.when_said || "") + "</div>" +
+    '<div class="ctl">' + owner +
+      '<select data-sassign>' + opts + "</select>" + btns + "</div>" +
+    '<div class="ctl"><label style="font-size:12px;color:var(--mute)">Next</label>' +
+      '<input type="date" data-sdate value="' + esc(a.next_date || "") + '">' +
+      '<input type="text" data-snote placeholder="what happens next" value="' +
+        esc(a.next_note || "") + '">' +
+      '<button class="b" data-ssave>Set</button>' +
+      '<span class="' + dueCls + '">' + esc(dueTxt) + "</span></div>" +
+    '<details class="log"><summary>Activity' + (log.length ? " (" + log.length + ")" : "") +
+      "</summary><ul>" + hist + "</ul></details></div>";
+}
+
+function slackHtml() {
+  if (!SLACK.length) return "";
+  return SLACK.map(slackCard).join("");
+}
+
+function paintSlack() {
+  var panel = $("#slackpanel");
+  if (panel && !panel.hidden) panel.innerHTML = slackHtml() ||
+    '<div class="empty">Nothing open from Slack.</div>';
+}
+
+// Replies whose sender address did not match any firm on the board are parked
+// here by the instantly-reply webhook, so a reply from a personal address is
+// never lost. Find the firm by search, log the reply on it, then Mark handled.
+function unmatchedHtml() {
+  if (!UNMATCHED.length) return '<div class="empty">No unmatched replies — every reply matched a firm.</div>';
+  return UNMATCHED.map(function (u) {
+    return '<div class="slack" data-unmatched="' + u.id + '">' +
+      '<div class="txt">' + esc(u.email || "(no address)") + "</div>" +
+      '<div class="meta">' + esc(u.campaign || "") +
+        (u.campaign ? " &middot; " : "") + esc(when(u.received_at)) + "</div>" +
+      (u.snippet ? '<div class="why">' + esc(u.snippet) + "</div>" : "") +
+      '<div class="ctl"><span style="font-size:12px;color:var(--mute)">Reply from an address not on the board — find the firm in search above, log the reply on its card, then:</span>' +
+      '<button class="b" data-resolve>Mark handled</button></div></div>';
+  }).join("");
+}
+function paintUnmatched() {
+  var p = $("#unmatchedpanel");
+  if (p && !p.hidden) p.innerHTML = unmatchedHtml();
+}
+
+function firmView(f, w, v) {
+  if (v === "mine")   return w.owner_email === me.email;
+  if (v === "free")   return !w.owner_email && !CLOSED[w.status];
+  if (v === "due")    return !!(w.next_date && w.next_date <= today());
+  if (v === "worked") return !!(w.status && w.status !== "Not started");
+  return !CLOSED[w.status];
+}
+function counts() {
+  var n = { all: 0, mine: 0, free: 0, due: 0, worked: 0 };
+  FIRMS.forEach(function (f) {
+    if ((f.tier || 1) !== tier) return;
+    if (!browseable(f)) return;                                   // only what the board shows
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return;  // respect the active state
+    var w = WORK[f.firm_id] || {};
+    if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return; // respect the active broker
+    if (firmView(f, w, "all"))    n.all++;
+    if (firmView(f, w, "mine"))   n.mine++;
+    if (firmView(f, w, "free"))   n.free++;
+    if (firmView(f, w, "due"))    n.due++;
+    if (firmView(f, w, "worked")) n.worked++;
+  });
+  Object.keys(n).forEach(function (k) { var e = $("#n-" + k); if (e) e.textContent = n[k]; });
+  [1, 2, 3].forEach(function (t) {
+    var e = $("#t-" + t);
+    if (e) e.textContent = FIRMS.filter(function (f) {
+      if ((f.tier || 1) !== t || !browseable(f)) return false;
+      var w = WORK[f.firm_id] || {};
+      if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
+      return firmView(f, w, view);   // tier counts reflect current view + broker (state resets on tier click)
+    }).length;
+  });
+  var open = SLACK.filter(function (a) { return !SLACK_CLOSED[a.status]; }).length;
+  var sdue = SLACK.filter(function (a) {
+    return a.next_date && a.next_date <= today() && !SLACK_CLOSED[a.status]; }).length;
+  if (sdue) open = open + "\u00a0\u00b7\u00a0" + sdue + " due";
+  var se = $("#t-slack"); if (se) se.textContent = open;
+  var p1n = FIRMS.filter(function (f) { return isDirectCell(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
+  var pe = $("#t-p1"); if (pe) pe.textContent = p1n;
+  var repn = FIRMS.filter(function (f) { return hasReply(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
+  var ree = $("#t-reply"); if (ree) ree.textContent = repn;
+  var rc = $("#replychip"); if (rc) rc.style.borderColor = repn ? "#1F7A3D" : "";
+  var ue = $("#t-unmatched"); if (ue) ue.textContent = UNMATCHED.length;
+  var ut = $("#unmatchedtoggle"); if (ut) ut.style.color = UNMATCHED.length ? "var(--red)" : "";
+  var st = $("#slacktoggle"); if (st) st.style.color = open ? "var(--red)" : "";
+
+  var acute = FIRMS.filter(function (f) { return f.priority === "ACUTE"; }).length;
+  var dual  = FIRMS.filter(function (f) { return (f.line_of_work || "").indexOf("+") > -1; }).length;
+  var phone = FIRMS.filter(function (f) { return !!(f.phone || f.email); }).length;
+  $("#tiles").innerHTML =
+    tile(n.free, "Left to call", true) + tile(n.mine, "Yours") +
+    tile(n.due, "Follow-ups due", n.due > 0) + tile(acute, "Acute") +
+    tile(dual, "Civil + survey") +
+    tile(phone + " / " + FIRMS.length, "Reachable");
+  brokerChips();
+}
+function tile(v, l, hot) {
+  return '<div class="tile"><div class="n' + (hot ? " hot" : "") + '">' + esc(v) +
+         '</div><div class="l">' + esc(l) + "</div></div>";
+}
+
+function brokerChips() {
+  var el = $("#brokers"); if (!el) return;
+  var c = {};
+  FIRMS.forEach(function (f) {
+    if ((f.tier || 1) !== tier) return;
+    if (!browseable(f)) return;
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return;
+    var w = WORK[f.firm_id] || {};
+    if (w.owner_email && !CLOSED[w.status]) c[w.owner_email] = (c[w.owner_email] || 0) + 1;
+  });
+  el.innerHTML = '<button class="chip' + (ownerFilter === "ALL" ? " on" : "") + '" data-owner="ALL">All brokers</button>' +
+    team.map(function (t) {
+      return '<button class="chip' + (ownerFilter === t.email ? " on" : "") + '" data-owner="' + esc(t.email) + '">' +
+        esc(t.full_name) + '<span class="k">' + (c[t.email] || 0) + '</span></button>'; }).join("");
+}
+function stateChips() {
+  var c = {};
+  FIRMS.forEach(function (f) {
+    if ((f.tier || 1) !== tier) return;
+    if (!browseable(f)) return;
+    var w = WORK[f.firm_id] || {};
+    if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return;
+    if (!firmView(f, w, view)) return;
+    c[f.state] = (c[f.state] || 0) + 1; });
+  var keys = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; });
+  $("#states").innerHTML = '<button class="chip on" data-st="ALL">All states</button>' +
+    keys.map(function (s) {
+      return '<button class="chip" data-st="' + esc(s) + '">' + esc(s) +
+             '<span class="k">' + c[s] + "</span></button>"; }).join("");
+}
+
+// ---------------------------------------------------------------- events
+document.addEventListener("click", function (e) {
+  var t = e.target;
+  if (t.dataset && t.dataset.tier) {
+    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; stateChips(); render(); counts(); return; }
+  if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; render(); counts(); return; }
+  if (t.id === "replychip") { replyOnly = !replyOnly; p1Only = false; render(); counts(); return; }
+  if (t.id === "slacktoggle") {
+    var panel = $("#slackpanel");
+    panel.hidden = !panel.hidden;
+    paintSlack();
+    t.classList.toggle("on", !panel.hidden);
+    return;
+  }
+  if (t.id === "unmatchedtoggle") {
+    var upn = $("#unmatchedpanel");
+    upn.hidden = !upn.hidden;
+    paintUnmatched();
+    t.classList.toggle("on", !upn.hidden);
+    return;
+  }
+  var ucard = t.closest && t.closest("[data-unmatched]");
+  if (ucard && t.dataset.resolve !== undefined) {
+    if (!me) { toast("Sign in first."); return; }
+    var uid = Number(ucard.dataset.unmatched);
+    sb.from("unmatched_replies").update({ resolved: true, resolved_by: me.email,
+      resolved_at: new Date().toISOString() }).eq("id", uid).then(function (r) {
+        if (r.error) { toast("Not saved: " + r.error.message); return; }
+        UNMATCHED = UNMATCHED.filter(function (u) { return u.id !== uid; });
+        paintUnmatched(); counts(); toast("Marked handled.");
+      });
+    return;
+  }
+  var scard = t.closest && t.closest(".slack");
+  if (scard) {
+    var sid = Number(scard.dataset.slack);
+    if (!me) { toast("Sign in first."); return; }
+    if (t.dataset.sstatus !== undefined) {
+      var cur = (SLACK.filter(function (a) { return a.id === sid; })[0] || {}).status;
+      var next = cur === t.dataset.sstatus ? "Open" : t.dataset.sstatus;
+      var patch = { status: next };
+      var row0 = SLACK.filter(function (a) { return a.id === sid; })[0];
+      if (row0 && !row0.owner_email) patch.owner_email = me.email;
+      saveSlack(sid, patch, next === "Open" ? "reopened it" : next.toLowerCase());
+      return;
+    }
+    if (t.dataset.ssave !== undefined) {
+      var d = $("[data-sdate]", scard).value, nt = $("[data-snote]", scard).value.trim();
+      if (!d) { toast("Pick a date for the follow-up."); return; }
+      saveSlack(sid, { next_date: d, next_note: nt }, "scheduled " + d, nt);
+      toast("Follow-up set for " + d);
+      return;
+    }
+  }
+  if (t.dataset && t.dataset.view) { view = t.dataset.view; render(); return; }
+  var _ob = t.closest && t.closest("[data-owner]");
+  if (_ob) { ownerFilter = _ob.dataset.owner; render(); return; }
+  if (t.dataset && t.dataset.st)   { stateFilter = t.dataset.st; render(); return; }
+  var box = t.closest && t.closest(".call"); if (!box) return;
+  var fid = box.dataset.fid;
+  if (t.dataset.status !== undefined) {
+    var cur = (WORK[fid] || {}).status;
+    var next = cur === t.dataset.status ? "Not started" : t.dataset.status;
+    var patch = { status: next };
+    if (!(WORK[fid] || {}).owner_email) patch.owner_email = me.email;
+    saveWork(fid, patch, next === "Not started" ? "cleared the status" : next.toLowerCase());
+    return;
+  }
+  if (t.dataset.save !== undefined) {
+    var d = $("[data-date]", box).value, nt = $("[data-note]", box).value.trim();
+    if (!d) { toast("Pick a date for the follow-up."); return; }
+    saveWork(fid, { next_date: d, next_note: nt }, "scheduled " + d, nt);
+    toast("Follow-up set for " + d);
+    return;
+  }
+  if (t.dataset.log !== undefined) {
+    var hp = $("[data-hap]", box).value.trim();
+    if (!hp) { toast("Type what happened first."); return; }
+    saveWork(fid, {}, "on the phone", hp);
+    var hi = $("[data-hap]", box); if (hi) hi.value = "";
+    toast("Logged to history.");
+    return;
+  }
+  if (t.dataset.sms !== undefined) {
+    var ff = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!ff) return;
+    var txt = smsText(ff);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function(){ toast("Text copied \u2014 paste into Messages."); }, function(){ window.prompt("Copy the text:", txt); });
+    } else { window.prompt("Copy the text:", txt); }
+    return;
+  }
+});
+
+document.addEventListener("change", function (e) {
+  var ssel = e.target.closest && e.target.closest("[data-sassign]");
+  if (ssel) {
+    var sid = Number(ssel.closest(".slack").dataset.slack), to = ssel.value || null;
+    if (!me) { toast("Sign in first."); return; }
+    saveSlack(sid, { owner_email: to },
+      to ? (to === me.email ? "claimed it" : "assigned to " + nameOf(to)) : "unassigned");
+    return;
+  }
+  var sel = e.target.closest && e.target.closest("[data-assign]"); if (!sel) return;
+  var fid = sel.closest(".call").dataset.fid, to = sel.value || null;
+  saveWork(fid, { owner_email: to },
+    to ? (to === me.email ? "claimed it" : "assigned to " + nameOf(to)) : "unassigned");
+});
+
+$("#search").addEventListener("input", function () { q = this.value.trim().toLowerCase(); render(); });
+
+// ---------------------------------------------------------------- boot
+function start() {
+  $("#gate").hidden = true; $("#app").hidden = false;
+  $("#whoami").textContent = nameOf(me.email) || me.email;
+  $("#stamp").textContent = FIRMS.length.toLocaleString() + " firms · list refreshed " +
+    (FIRMS[0] && FIRMS[0].refreshed_at ? new Date(FIRMS[0].refreshed_at).toLocaleDateString() : "—");
+  $("#foot").textContent =
+    "Internal use · a ranking tool, not a valuation · do not quote the revenue estimates";
+  stateChips(); render(); counts(); subscribe();
+}
+
+function boot() {
+  if (!window.supabase || !CFG.SUPABASE_URL || CFG.SUPABASE_URL.indexOf("YOUR-PROJECT") > -1) {
+    showGate("This page has not been configured yet.", "err");
+    return;
+  }
+  sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
+    auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+  });
+
+  var started = false;
+  function go(session) {
+    if (started || !session) return;
+    started = true;
+    me = session.user;
+    // Clear the tokens out of the address bar. Reloading with them still
+    // present made the client try to consume an already-used token, which
+    // failed quietly and dumped you back on the sign-in box.
+    try { history.replaceState({}, "", location.pathname); } catch (e) {}
+    // Supabase issues the token on one server and checks it on another. For a
+    // few seconds after signing in those two clocks can disagree, and the very
+    // first read comes back "JWT issued at future". It is transient: wait, get
+    // a fresh token, try again. Only a genuine failure reaches the viewer.
+    (function attempt(n) {
+      load().then(start).catch(function (err) {
+        var m = String((err && (err.message || err.msg)) || err || "");
+        if (n < 4 && /issued at future|jwt|clock|exp/i.test(m)) {
+          showGate("Signing you in\u2026 waiting for the server clock to catch up.", "ok");
+          setTimeout(function () {
+            sb.auth.refreshSession()
+              .then(function () { attempt(n + 1); })
+              .catch(function () { attempt(n + 1); });
+          }, 2500);
+          return;
+        }
+        showGate("Signed in as " + (me.email || "") + ", but the board would not load: " +
+                 m, "err");
+      });
+    })(1);
+  }
+
+  sb.auth.onAuthStateChange(function (evt, session) { if (session) go(session); });
+
+  // On a magic-link return the session is not ready on the first tick, so ask
+  // again before giving up.
+  sb.auth.getSession().then(function (r) {
+    var s1 = r.data && r.data.session;
+    if (s1) { go(s1); return; }
+    setTimeout(function () {
+      sb.auth.getSession().then(function (r2) {
+        var s2 = r2.data && r2.data.session;
+        if (s2) go(s2); else if (!started) showGate();
+      });
+    }, 1500);
+  });
+}
+boot();
+})();
+</script>
+</body>
+</html>
