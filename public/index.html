@@ -488,6 +488,9 @@ function card(f) {
         esc(w.next_note || "") + '">' +
       '<button class="b" data-save>Set</button>' +
       '<span class="' + dueCls + '">' + esc(dueTxt) + "</span></div>" +
+    '<div class="ctl"><label style="font-size:12px;color:var(--mute)">What happened?</label>' +
+      '<input type="text" data-hap placeholder="the objection / how the dial went \u2014 \u201cnot interested\u201d, \u201casked who the buyer is\u201d" style="flex:1;min-width:200px">' +
+      '<button class="b" data-log>Log</button></div>' +
     '<details class="log"><summary>Activity' + (log.length ? " (" + log.length + ")" : "") +
       "</summary><ul>" + hist + "</ul></details>" +
     "</div>";
@@ -785,6 +788,15 @@ document.addEventListener("click", function (e) {
     if (!d) { toast("Pick a date for the follow-up."); return; }
     saveWork(fid, { next_date: d, next_note: nt }, "scheduled " + d, nt);
     toast("Follow-up set for " + d);
+    return;
+  }
+  if (t.dataset.log !== undefined) {
+    var hp = $("[data-hap]", box).value.trim();
+    if (!hp) { toast("Type what happened first."); return; }
+    saveWork(fid, {}, "on the phone", hp);
+    var hi = $("[data-hap]", box); if (hi) hi.value = "";
+    toast("Logged to history.");
+    return;
   }
 });
 
