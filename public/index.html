@@ -479,7 +479,7 @@ function card(f) {
     '<span class="badge' + (f.priority === "ACUTE" ? " acute" : "") + '">' +
       esc(f.priority || "") + " · " + esc(f.score == null ? "" : f.score) + "</span>" + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
     '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
-    (f.address ? '<div class="addr">' + esc(f.address) + "</div>" : "") +
+    ((f.address || f.city) ? '<div class="addr">' + esc([f.address, f.city, f.state].filter(Boolean).join(", ")) + "</div>" : "") +
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
     '<div class="ctl">' + '<select data-assign>' + opts + "</select>" + btns + "</div>" +
     '<div class="ctl"><label style="font-size:12px;color:var(--mute)">Next</label>' +
