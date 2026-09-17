@@ -446,6 +446,35 @@ function smsMsgs(f){ var fn=firstNameOf(f), co=f.company||"your firm";
     c: fn+", "+sender+" at Transworld. A NASDAQ-listed buyer I represent is quietly acquiring firms like yours nearby. Not a listing pitch \u2014 a confidential 15-min so you know your number before timing forces it. Open to it?"
   };
 }
+// the 5-touch email sequence, personalized per card, sender = the assigned
+// broker; credentials read first-person for Jason and "our team" for anyone
+// else (the record is Jason's). Returns {n,label,subj,body} for the copy chips.
+function emailMsgs(f){
+  var fn=firstNameOf(f), co=f.company||"your firm", st=f.state||"your area";
+  var w=WORK[f.firm_id]||{};
+  var sender = w.owner_email ? nameOf(w.owner_email) : (me ? (nameOf(me.email)||me.email) : "Jason Curcio");
+  var jason = /jason/i.test(sender);
+  var sig = "\n\n"+sender+"  |  Transworld Business Advisors"+(jason?"  \u00b7  Exclusive Buy-Side":"  \u00b7  Buy-Side Team")+
+            "\n[direct line]  \u00b7  [office postal address]\nReply STOP and you won\u2019t hear from me again.";
+  var cred1 = jason
+    ? "I\u2019m "+sender+" at Transworld. I hold the exclusive buy-side mandate for a publicly traded company that\u2019s quietly acquiring land surveying firms \u2014 I\u2019ve personally closed 12 of their 26 acquisitions, 9 of them survey firms like yours, and I\u2019ve sold more survey firms than any broker in the country over 8 years."
+    : "I\u2019m "+sender+" on the Transworld buy-side team. Our team holds the exclusive mandate for a publicly traded company that\u2019s quietly acquiring land surveying firms \u2014 we\u2019ve closed 12 of their 26 acquisitions, 9 of them survey firms like yours, and sold more survey firms than any broker in the country over 8 years.";
+  var cred2 = jason ? "I\u2019ve closed 12 of their 26, 9 of them survey firms." : "Our team has closed 12 of their 26, 9 of them survey firms.";
+  var cred3 = jason ? "mine is buying geographic footprint and licensed capacity, not just cash flow" : "the buyer we represent is buying geographic footprint and licensed capacity, not just cash flow";
+  var cred4 = jason ? "One firm I sold to this buyer" : "One firm our team sold to this buyer";
+  return [
+    { n:"1", label:"1 \u00b7 open", subj:fn+", a straight question about "+co,
+      body:fn+" \u2014 you don\u2019t know me and this is a cold email, so I\u2019ll be quick and you can tell me to get lost.\n\n"+cred1+"\n\nI\u2019m not asking you to list "+co+". I\u2019m writing because they\u2019re active in "+st+" and your firm fits what they buy.\n\nWorth 15 minutes to hear what that could look like \u2014 or should I leave you be?"+sig },
+    { n:"2", label:"2 \u00b7 drone", subj:"What the drone piece actually changes for a firm like "+co,
+      body:fn+" \u2014 following last week. Let me be specific about the one thing that makes this buyer different.\n\nThey build FAA-approved AI drone systems into the survey firms they acquire. Same crew, same clients \u2014 the math just changes:\n\n\u2192 a topo that ties up a 3-person crew for two days: done in an afternoon\n\u2192 LiDAR and photogrammetry at a fraction of today\u2019s equipment cost\n\u2192 you can suddenly bid the government and utility work that requires drone certification\n\u2192 your licensed PLS people move from the field to analysis and clients\n\nThey don\u2019t rebuild what you\u2019ve spent years building. They hand it more horsepower.\n\n"+cred2+" Fifteen minutes and I\u2019ll walk you through how it actually works."+sig },
+    { n:"3", label:"3 \u00b7 value", subj:"What survey firms are actually selling for right now",
+      body:fn+" \u2014 the honest market picture, because most owners are working off a number that\u2019s years old.\n\nSurvey firms in the $1M\u2013$8M range trade around 3.5\u20136x EBITDA. Government clients, multiple licensed PLS, and recurring project work push you toward the top of that.\n\nHere\u2019s the part a financial buyer can\u2019t match: "+cred3+" \u2014 so they have a reason to pay at or above market.\n\nThe exit only happens once, and it\u2019s usually decided reactively \u2014 by health, or burnout, or timing. Knowing your number before then is the whole game.\n\nThirty minutes with your last two years of P&L and I\u2019ll give you a real one. No cost, no obligation."+sig },
+    { n:"4", label:"4 \u00b7 story", subj:"How a 30-year survey firm made this call",
+      body:fn+" \u2014 a quick story, because it\u2019s the closest thing to a preview you\u2019ll get.\n\n"+cred4+" had been going 30 years \u2014 twelve licensed staff, a deep government and utility base. The owner wasn\u2019t looking to sell. He was curious. That\u2019s it.\n\nWhat he didn\u2019t expect:\n\n\u2192 he kept every employee \u2014 they needed the licensed surveyors\n\u2192 the drone platform changed what his crew could win \u2014 government contracts he couldn\u2019t have touched before\n\u2192 first call to close was under 90 days\n\nHe still runs the operation today \u2014 same firm, better tools, a well-capitalized company behind him.\n\nCurious is all it takes to start. Worth fifteen minutes?"+sig },
+    { n:"5", label:"5 \u00b7 breakup", subj:"Should I close out "+co+"?",
+      body:fn+" \u2014 I won\u2019t keep landing in your inbox.\n\nShould I take "+co+" off my list \u2014 or is a conversation somewhere down the road worth keeping the door open for?\n\nEither answer is a good answer. I just don\u2019t want to guess."+sig }
+  ];
+}
 function contactable(f){
   var w = WORK[f.firm_id] || {};
   // reachable = has a phone/email, OR is already in play (claimed / worked / scheduled follow-up)
@@ -590,6 +619,13 @@ function card(f) {
       '<button class="b" data-sms="b">B \u00b7 curiosity</button>' +
       '<button class="b" data-sms="c">C \u00b7 short</button>' +
       '<span style="font-size:11px;color:var(--mute)">1:1 only \u00b7 from your phone \u00b7 never a blast</span></div>' : '') +
+    '<div class="ctl"><span style="font-size:11px;color:var(--mute)">\u2709 Copy email:</span>' +
+      '<button class="b" data-email="0">1 \u00b7 open</button>' +
+      '<button class="b" data-email="1">2 \u00b7 drone</button>' +
+      '<button class="b" data-email="2">3 \u00b7 value</button>' +
+      '<button class="b" data-email="3">4 \u00b7 story</button>' +
+      '<button class="b" data-email="4">5 \u00b7 breakup</button>' +
+      '<span style="font-size:11px;color:var(--mute)">manual send \u00b7 subject + body \u00b7 paste into Outlook</span></div>' +
     '<details class="log"><summary>Activity' + (log.length ? " (" + log.length + ")" : "") +
       "</summary><ul>" + hist + "</ul></details>" +
     "</div>";
@@ -958,6 +994,15 @@ document.addEventListener("click", function (e) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(function(){ toast("Text " + lbl + " copied \u2014 paste into Messages."); }, function(){ window.prompt("Copy the text:", txt); });
     } else { window.prompt("Copy the text:", txt); }
+    return;
+  }
+  if (t.dataset.email !== undefined) {
+    var fe = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!fe) return;
+    var seq = emailMsgs(fe), em = seq[Number(t.dataset.email)] || seq[0];
+    var etxt = "Subject: " + em.subj + "\n\n" + em.body;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(etxt).then(function(){ toast("Email " + em.n + " copied \u2014 paste into Outlook."); }, function(){ window.prompt("Copy the email:", etxt); });
+    } else { window.prompt("Copy the email:", etxt); }
     return;
   }
 });
