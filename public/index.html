@@ -97,6 +97,7 @@ h3.st .k{font:400 12px -apple-system,sans-serif;color:var(--mute);
 .band.P4{color:#8A8A8A}
 .band.REP{color:#fff;background:#1F7A3D;border-color:#1F7A3D}
 .band.BNC{color:#fff;background:#8A2B20;border-color:#8A2B20}
+.band.EAQ{color:#fff;background:#00461C;border-color:#00461C}
 .who s{color:var(--faint)}
 .who .btag{font:700 9px/1.4 ui-monospace,Menlo,monospace;color:#8A2B20;background:#F6E7E4;border:1px solid #E4C7C2;border-radius:3px;padding:0 4px;margin-left:3px;vertical-align:1px}
 .askfor{color:var(--green);font-weight:700}
@@ -182,6 +183,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <button class="chip" id="p1cell" style="border-color:var(--gold);color:var(--green);font-weight:600">☎ P1 · direct cell<span class="k" id="t-p1">0</span></button>
       <button class="chip" id="acutechip" style="border-color:var(--red);color:var(--red);font-weight:600">⚠ Acute<span class="k" id="t-acute">0</span></button>
       <button class="chip" id="bouncechip" style="border-color:#8A2B20;color:#8A2B20;font-weight:600">⚠ Bounced<span class="k" id="t-bounce">0</span></button>
+      <button class="chip" id="eaqchip" style="border-color:var(--green);color:var(--green);font-weight:600">📋 Intake<span class="k" id="t-eaq">0</span></button>
     </div>
     <div class="row">
       <button class="chip" data-view="all">Everything<span class="k" id="n-all">0</span></button>
@@ -258,8 +260,8 @@ var SLACK_STATUSES = [
 var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
-    UNMATCHED = [],
-    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false;
+    UNMATCHED = [], EAQ = {},
+    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false, eaqOnly = false;
 
 // ---------------------------------------------------------------- sign in
 function showGate(msg, kind) {
@@ -339,7 +341,8 @@ function load() {
     sb.from("slack_actions").select("*").order("id"),
     fetchAll("slack_activity", "at", true),
     sb.from("enrichment_queue").select("*"),
-    sb.from("unmatched_replies").select("*").eq("resolved", false).order("received_at", { ascending: false })
+    sb.from("unmatched_replies").select("*").eq("resolved", false).order("received_at", { ascending: false }),
+    sb.from("eaq_submissions").select("firm_id,contact_name,timeline,created_at").not("firm_id", "is", null).order("created_at", { ascending: false })
   ]).then(function (r) {
     if (r[0].error) throw r[0].error;
     team  = r[0].data || [];
@@ -354,8 +357,12 @@ function load() {
     ((r[6] && r[6].data) || []).forEach(function (q) {
       if (q.firm_id) QUEUE[q.firm_id] = q; });
     UNMATCHED = (r[7] && r[7].data) || [];
+    EAQ = {}; ((r[8] && r[8].data) || []).forEach(function (s) { if (s.firm_id && !EAQ[s.firm_id]) EAQ[s.firm_id] = s; });
   });
 }
+// a prospect returned the sell-side readiness intake for this firm — the strongest
+// interest signal on the board.
+function isSubmitted(f){ return !!EAQ[f.firm_id]; }
 
 function subscribe() {
   sb.channel("board")
@@ -376,6 +383,9 @@ function subscribe() {
     })
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "unmatched_replies" }, function (p) {
       if (p.new && !p.new.resolved) { UNMATCHED.unshift(p.new); paintUnmatched(); counts(); }
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "eaq_submissions" }, function (p) {
+      if (p.new && p.new.firm_id) { EAQ[p.new.firm_id] = p.new; renderOne(p.new.firm_id); counts(); }
     })
     .on("postgres_changes", { event: "*", schema: "public", table: "firms" }, function (p) {
       // enrichment (phones/emails/principals, incl. the daily monitor's writes) lands live — no reload
@@ -540,6 +550,12 @@ function visible(f) {
     if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
     return !CLOSED[w.status];
   }
+  if (eaqOnly) {
+    if (!isSubmitted(f)) return false;
+    if (q && !matchesQ(f)) return false;
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+    return !CLOSED[w.status];
+  }
   // a typed query is a GLOBAL find: any tier, many fields, ignoring the active
   // tier/view so a firm surfaces wherever it lives (state + broker still narrow).
   if (q) {
@@ -622,7 +638,7 @@ function card(f) {
 
   return '<div class="' + cls + '" data-fid="' + esc(f.firm_id) + '">' +
     '<div class="top"><span class="firm">' + esc(f.company) + "</span>" +
-    '<span class="badge band ' + pLabel(f) + '" title="' + (pLabel(f)==="P1"?"Tier 1 — best-fit target, still independent. Call first.":pLabel(f)==="P2"?"Tier 2 — proven adjacent line. Work after P1.":"Tier 3 roster or already acquired — lowest priority.") + '">' + pLabel(f) + "</span>" + (f.priority === "ACUTE" ? '<span class="badge acute" title="Succession risk — lone aging licensee (no successor) or shrinking headcount. Jump on it regardless of tier.">ACUTE</span>' : "") + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (isBounced(f) ? '<span class="band BNC" title="email address bounced — find a new one before emailing again">⚠ BOUNCED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
+    '<span class="badge band ' + pLabel(f) + '" title="' + (pLabel(f)==="P1"?"Tier 1 — best-fit target, still independent. Call first.":pLabel(f)==="P2"?"Tier 2 — proven adjacent line. Work after P1.":"Tier 3 roster or already acquired — lowest priority.") + '">' + pLabel(f) + "</span>" + (f.priority === "ACUTE" ? '<span class="badge acute" title="Succession risk — lone aging licensee (no successor) or shrinking headcount. Jump on it regardless of tier.">ACUTE</span>' : "") + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (isBounced(f) ? '<span class="band BNC" title="email address bounced — find a new one before emailing again">⚠ BOUNCED</span>' : "") + (isSubmitted(f) ? '<span class="band EAQ" title="returned the sell-side readiness questionnaire — hottest signal on the board; call now">📋 INTAKE</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
     '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
     ((f.address || f.city) ? '<div class="addr">' + esc([f.address, f.city, f.state].filter(Boolean).join(", ")) + "</div>" : "") +
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
@@ -709,6 +725,7 @@ function render() {
   var rcx = $("#replychip"); if (rcx) rcx.classList.toggle("on", replyOnly);
   var acx = $("#acutechip"); if (acx) acx.classList.toggle("on", acuteOnly);
   var bcx = $("#bouncechip"); if (bcx) bcx.classList.toggle("on", bounceOnly);
+  var ecx = $("#eaqchip"); if (ecx) ecx.classList.toggle("on", eaqOnly);
 }
 
 var BLURB = {
@@ -884,6 +901,9 @@ function counts() {
   var bnn = FIRMS.filter(function (f) { return isBounced(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
   var bne = $("#t-bounce"); if (bne) bne.textContent = bnn;
   var bnc = $("#bouncechip"); if (bnc) bnc.style.display = bnn ? "" : "none";
+  var eqn = FIRMS.filter(function (f) { return isSubmitted(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
+  var eqe = $("#t-eaq"); if (eqe) eqe.textContent = eqn;
+  var eqc = $("#eaqchip"); if (eqc) eqc.style.display = eqn ? "" : "none";
   var rc = $("#replychip"); if (rc) rc.style.borderColor = repn ? "#1F7A3D" : "";
   var ue = $("#t-unmatched"); if (ue) ue.textContent = UNMATCHED.length;
   var ut = $("#unmatchedtoggle"); if (ut) ut.style.color = UNMATCHED.length ? "var(--red)" : "";
@@ -939,11 +959,12 @@ function stateChips() {
 document.addEventListener("click", function (e) {
   var t = e.target;
   if (t.dataset && t.dataset.tier) {
-    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; stateChips(); render(); counts(); return; }
-  if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; acuteOnly = false; bounceOnly = false; render(); counts(); return; }
-  if (t.id === "replychip") { replyOnly = !replyOnly; p1Only = false; acuteOnly = false; bounceOnly = false; render(); counts(); return; }
-  if (t.id === "acutechip") { acuteOnly = !acuteOnly; p1Only = false; replyOnly = false; bounceOnly = false; render(); counts(); return; }
-  if (t.id === "bouncechip") { bounceOnly = !bounceOnly; p1Only = false; replyOnly = false; acuteOnly = false; render(); counts(); return; }
+    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; stateChips(); render(); counts(); return; }
+  if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
+  if (t.id === "replychip") { replyOnly = !replyOnly; p1Only = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
+  if (t.id === "acutechip") { acuteOnly = !acuteOnly; p1Only = false; replyOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
+  if (t.id === "bouncechip") { bounceOnly = !bounceOnly; p1Only = false; replyOnly = false; acuteOnly = false; eaqOnly = false; render(); counts(); return; }
+  if (t.id === "eaqchip") { eaqOnly = !eaqOnly; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; render(); counts(); return; }
   if (t.id === "searchclear") { var sb2 = $("#search"); if (sb2) { sb2.value = ""; sb2.focus(); } q = ""; t.style.display = "none"; render(); return; }
   if (t.id === "slacktoggle") {
     var panel = $("#slackpanel");
