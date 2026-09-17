@@ -166,7 +166,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 <div class="wrap">
   <header>
     <div class="me">Signed in as <b id="whoami"></b><br>
-      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" href="readiness.html" target="_blank" rel="noopener" title="Sell-side readiness intake — share this link with any prospect">📝 Valuation Questionnaire</a></div>
+      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" href="valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — share this link with any prospect">📝 Valuation Questionnaire</a></div>
     <h1>Deal Board</h1>
     <div class="sub">Buy-side mandate · <span id="stamp"></span></div>
   </header>
@@ -224,6 +224,25 @@ function esc(s) { var d = document.createElement("div"); d.textContent = s == nu
 function toast(m) {
   var t = $("#toast"); t.textContent = m; t.style.display = "block";
   clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; }, 3400);
+}
+// Copy rich HTML + plain text so a paste into Outlook keeps a real hyperlink.
+// Falls back to plain text where the async Clipboard API isn't available.
+function copyRich(html, text, okMsg) {
+  var done = function(){ toast(okMsg); };
+  var plain = function(){
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(text).then(done, function(){ window.prompt("Copy the email:", text); });
+    else window.prompt("Copy the email:", text);
+  };
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      var item = new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([text], { type: "text/plain" })
+      });
+      navigator.clipboard.write([item]).then(done, plain);
+    } else { plain(); }
+  } catch (e) { plain(); }
 }
 function today() { return new Date().toISOString().slice(0, 10); }
 function when(iso) {
@@ -511,11 +530,21 @@ function nurtureMsg(f){
   var w=WORK[f.firm_id]||{};
   var sender = w.owner_email ? nameOf(w.owner_email) : (me ? (nameOf(me.email)||me.email) : "Jason Curcio");
   var jason = /jason/i.test(sender);
-  var link = "https://bellamia124.github.io/deal-board/public/worth.html?f=" + encodeURIComponent(f.firm_id||"");
-  var sig = "\n\n"+sender+"  |  Transworld Business Advisors"+(jason?"  \u00b7  Exclusive Buy-Side":"  \u00b7  Buy-Side Team")+
+  var link = "https://bellamia124.github.io/deal-board/public/value/?f=" + encodeURIComponent(f.firm_id||"");
+  var anchor = "Get a confidential value range for "+co;
+  var sigPlain = "\n\n"+sender+"  |  Transworld Business Advisors"+(jason?"  \u00b7  Exclusive Buy-Side":"  \u00b7  Buy-Side Team")+
             "\n[direct line]  \u00b7  [office postal address]\nReply STOP and you won\u2019t hear from me again.";
-  return { n:"R", label:"value tool", subj:"A number for "+co+" \u2014 no call required",
-    body:fn+" \u2014 I\u2019ll make this easy.\n\nIf a call feels like too much before you know whether it\u2019s even worth it, here\u2019s the shortcut: a quick tool that gives you a rough value range for "+co+" in about 30 seconds. No obligation, nothing shared, and no one calls unless you ask.\n\n"+link+"\n\nIf the range is interesting, we talk. If it\u2019s not, you\u2019re out 30 seconds. Either way you\u2019ll know where you stand."+sig };
+  var intro = fn+" \u2014 I\u2019ll make this easy.\n\nIf a call feels like too much before you know whether it\u2019s even worth it, here\u2019s the shortcut: a quick tool that gives you a rough value range for "+co+" in about 30 seconds. No obligation, nothing shared, and no one calls unless you ask.";
+  var outro = "If the range is interesting, we talk. If it\u2019s not, you\u2019re out 30 seconds. Either way you\u2019ll know where you stand.";
+  var body = intro+"\n\n"+anchor+": "+link+"\n\n"+outro+sigPlain;
+  // HTML version so a paste into Outlook lands as a real clickable link, not a raw URL
+  function esc2(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function p(s){ return "<p>"+esc2(s).replace(/\n/g,"<br>")+"</p>"; }
+  var html = p(intro)
+    + '<p><a href="'+link+'">'+esc2(anchor)+' &rarr;</a></p>'
+    + p(outro)
+    + p(sigPlain.replace(/^\n+/,""));
+  return { n:"R", label:"value tool", subj:"A number for "+co+" \u2014 no call required", body:body, html:html };
 }
 // Campaign B (router): the card's contact is a gatekeeper / not the owner. A
 // low-friction "point me to the right person" ask. Buyer never named.
@@ -1123,10 +1152,10 @@ document.addEventListener("click", function (e) {
   }
   if (t.dataset.nurture !== undefined) {
     var fnu = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!fnu) return;
-    var nm = nurtureMsg(fnu), ntxt = "Subject: " + nm.subj + "\n\n" + nm.body;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(ntxt).then(function(){ toast("Value-tool email copied \u2014 paste into Outlook."); }, function(){ window.prompt("Copy the email:", ntxt); });
-    } else { window.prompt("Copy the email:", ntxt); }
+    var nm = nurtureMsg(fnu);
+    var ntxt = "Subject: " + nm.subj + "\n\n" + nm.body;
+    var nhtml = "<p><b>Subject:</b> " + esc(nm.subj) + "</p>" + nm.html;
+    copyRich(nhtml, ntxt, "Value-tool email copied \u2014 paste into Outlook (link is live).");
     return;
   }
   if (t.dataset.bounce !== undefined) {
