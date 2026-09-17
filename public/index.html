@@ -515,6 +515,18 @@ function nurtureMsg(f){
   return { n:"R", label:"value tool", subj:"A number for "+co+" \u2014 no call required",
     body:fn+" \u2014 I\u2019ll make this easy.\n\nIf a call feels like too much before you know whether it\u2019s even worth it, here\u2019s the shortcut: a quick tool that gives you a rough value range for "+co+" in about 30 seconds. No obligation, nothing shared, and no one calls unless you ask.\n\n"+link+"\n\nIf the range is interesting, we talk. If it\u2019s not, you\u2019re out 30 seconds. Either way you\u2019ll know where you stand."+sig };
 }
+// Campaign B (router): the card's contact is a gatekeeper / not the owner. A
+// low-friction "point me to the right person" ask. Buyer never named.
+function routerMsg(f){
+  var fn=firstNameOf(f), co=f.company||"the firm", st=f.state||"the area";
+  var w=WORK[f.firm_id]||{};
+  var sender = w.owner_email ? nameOf(w.owner_email) : (me ? (nameOf(me.email)||me.email) : "Jason Curcio");
+  var jason = /jason/i.test(sender);
+  var sig = "\n\n"+sender+"  |  Transworld Business Advisors"+(jason?"  \u00b7  Exclusive Buy-Side":"  \u00b7  Buy-Side Team")+
+            "\n[direct line]  \u00b7  [office postal address]\nReply STOP and you won\u2019t hear from me again.";
+  return { n:"B", label:"router", subj:"Who handles ownership questions at "+co+"?",
+    body:fn+" \u2014 you\u2019re probably not the right person for this, and that\u2019s fine.\n\nI represent a buyer active with survey and engineering firms in "+st+". I just need to reach whoever handles ownership decisions at "+co+".\n\nPoint me their way and I\u2019ll leave you out of it entirely."+sig };
+}
 function contactable(f){
   var w = WORK[f.firm_id] || {};
   // reachable = has a phone/email, OR is already in play (claimed / worked / scheduled follow-up)
@@ -679,6 +691,8 @@ function card(f) {
       '<button class="b" data-email="2">3 \u00b7 value</button>' +
       '<button class="b" data-email="3">4 \u00b7 story</button>' +
       '<button class="b" data-email="4">5 \u00b7 breakup</button>' +
+      '<span style="font-size:11px;color:var(--faint)">|</span>' +
+      '<button class="b" data-router title="Not the owner? Ask a gatekeeper to point you to the decision-maker.">B \u00b7 router</button>' +
       '<span style="font-size:11px;color:var(--mute)">manual send \u00b7 subject + body \u00b7 paste into Outlook</span></div>' +
     '<div class="ctl"><span style="font-size:11px;color:var(--mute)">\ud83d\udd17 Re-engage:</span>' +
       '<button class="b" data-nurture>Copy value-tool email</button>' +
@@ -1075,6 +1089,14 @@ document.addEventListener("click", function (e) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(etxt).then(function(){ toast("Email " + em.n + " copied \u2014 paste into Outlook."); }, function(){ window.prompt("Copy the email:", etxt); });
     } else { window.prompt("Copy the email:", etxt); }
+    return;
+  }
+  if (t.dataset.router !== undefined) {
+    var frt = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!frt) return;
+    var rm = routerMsg(frt), rtxt = "Subject: " + rm.subj + "\n\n" + rm.body;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(rtxt).then(function(){ toast("Router email copied — paste into Outlook."); }, function(){ window.prompt("Copy the email:", rtxt); });
+    } else { window.prompt("Copy the email:", rtxt); }
     return;
   }
   if (t.dataset.nurture !== undefined) {
