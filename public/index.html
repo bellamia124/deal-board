@@ -177,6 +177,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <button class="chip" id="unmatchedtoggle">Unmatched replies<span class="k" id="t-unmatched">0</span></button>
       <button class="chip" id="replychip" style="border-color:#1F7A3D;color:#1F7A3D;font-weight:600">✉ Replied<span class="k" id="t-reply">0</span></button>
       <button class="chip" id="p1cell" style="border-color:var(--gold);color:var(--green);font-weight:600">☎ P1 · direct cell<span class="k" id="t-p1">0</span></button>
+      <button class="chip" id="acutechip" style="border-color:var(--red);color:var(--red);font-weight:600">⚠ Acute<span class="k" id="t-acute">0</span></button>
     </div>
     <div class="row">
       <button class="chip" data-view="all">Everything<span class="k" id="n-all">0</span></button>
@@ -184,7 +185,8 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <button class="chip" data-view="due">Due<span class="k" id="n-due">0</span></button>
       <button class="chip" data-view="worked">Worked<span class="k" id="n-worked">0</span></button>
       <span class="gap"></span>
-      <input id="search" type="search" placeholder="find a company, town or person">
+      <input id="search" type="search" placeholder="find any firm — name, town, phone, email… (all tiers)">
+      <button class="chip" id="searchclear" title="Clear search" style="display:none;font-weight:700">×</button>
     </div>
     <div class="row" id="brokers" style="margin-top:7px"></div>
     <div class="row" id="states" style="margin-top:7px"></div>
@@ -253,7 +255,7 @@ var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
     UNMATCHED = [],
-    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false;
+    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false;
 
 // ---------------------------------------------------------------- sign in
 function showGate(msg, kind) {
@@ -462,26 +464,42 @@ function browseable(f){
   if ((f.tier || 1) === 1 && !f.principal && !inPlay(f)) return false;
   return true;
 }
+function matchesQ(f){
+  if (!q) return true;
+  var hay = [f.company, f.principal, f.city, f.state, f.phone, f.email, f.address, f.website, f.line_of_work]
+    .join(" ").toLowerCase();
+  return hay.indexOf(q) >= 0;
+}
 function visible(f) {
   var w = WORK[f.firm_id] || {};
   if (p1Only) {
     if (!isDirectCell(f)) return false;
-    if (q) { var h2=(f.company+" "+f.city+" "+f.principal+" "+f.state).toLowerCase(); if (h2.indexOf(q)<0) return false; }
+    if (q && !matchesQ(f)) return false;
     if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
     return !CLOSED[w.status];
   }
   if (replyOnly) {
     if (!hasReply(f)) return false;
-    if (q) { var h3=(f.company+" "+f.city+" "+f.principal+" "+f.state).toLowerCase(); if (h3.indexOf(q)<0) return false; }
+    if (q && !matchesQ(f)) return false;
     if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
     return !CLOSED[w.status];
   }
-  if (!browseable(f) && !q) return false;  // hide untouched no-contact AND principal-unknown firms; a claimed/worked/scheduled firm always shows, and search still finds anything
-  if ((f.tier || 1) !== tier) return false;
-  if (q) {
-    var hay = (f.company + " " + f.city + " " + f.principal + " " + f.state).toLowerCase();
-    if (hay.indexOf(q) < 0) return false;
+  if (acuteOnly) {
+    if (f.priority !== "ACUTE") return false;
+    if (q && !matchesQ(f)) return false;
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+    return !CLOSED[w.status];
   }
+  // a typed query is a GLOBAL find: any tier, many fields, ignoring the active
+  // tier/view so a firm surfaces wherever it lives (state + broker still narrow).
+  if (q) {
+    if (!matchesQ(f)) return false;
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+    if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
+    return !CLOSED[w.status];
+  }
+  if (!browseable(f)) return false;  // hide untouched no-contact AND principal-unknown firms; a claimed/worked/scheduled firm always shows
+  if ((f.tier || 1) !== tier) return false;
   if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
   if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
   if (view === "mine")   return w.owner_email === me.email;
@@ -625,6 +643,7 @@ function render() {
     c.classList.toggle("on", c.dataset.owner === ownerFilter); });
   var pcx = $("#p1cell"); if (pcx) pcx.classList.toggle("on", p1Only);
   var rcx = $("#replychip"); if (rcx) rcx.classList.toggle("on", replyOnly);
+  var acx = $("#acutechip"); if (acx) acx.classList.toggle("on", acuteOnly);
 }
 
 var BLURB = {
@@ -795,6 +814,8 @@ function counts() {
   var pe = $("#t-p1"); if (pe) pe.textContent = p1n;
   var repn = FIRMS.filter(function (f) { return hasReply(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
   var ree = $("#t-reply"); if (ree) ree.textContent = repn;
+  var acn = FIRMS.filter(function (f) { return f.priority === "ACUTE" && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
+  var ace = $("#t-acute"); if (ace) ace.textContent = acn;
   var rc = $("#replychip"); if (rc) rc.style.borderColor = repn ? "#1F7A3D" : "";
   var ue = $("#t-unmatched"); if (ue) ue.textContent = UNMATCHED.length;
   var ut = $("#unmatchedtoggle"); if (ut) ut.style.color = UNMATCHED.length ? "var(--red)" : "";
@@ -850,9 +871,11 @@ function stateChips() {
 document.addEventListener("click", function (e) {
   var t = e.target;
   if (t.dataset && t.dataset.tier) {
-    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; stateChips(); render(); counts(); return; }
-  if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; render(); counts(); return; }
-  if (t.id === "replychip") { replyOnly = !replyOnly; p1Only = false; render(); counts(); return; }
+    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; acuteOnly = false; stateChips(); render(); counts(); return; }
+  if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; acuteOnly = false; render(); counts(); return; }
+  if (t.id === "replychip") { replyOnly = !replyOnly; p1Only = false; acuteOnly = false; render(); counts(); return; }
+  if (t.id === "acutechip") { acuteOnly = !acuteOnly; p1Only = false; replyOnly = false; render(); counts(); return; }
+  if (t.id === "searchclear") { var sb2 = $("#search"); if (sb2) { sb2.value = ""; sb2.focus(); } q = ""; t.style.display = "none"; render(); return; }
   if (t.id === "slacktoggle") {
     var panel = $("#slackpanel");
     panel.hidden = !panel.hidden;
@@ -954,7 +977,11 @@ document.addEventListener("change", function (e) {
     to ? (to === me.email ? "claimed it" : "assigned to " + nameOf(to)) : "unassigned");
 });
 
-$("#search").addEventListener("input", function () { q = this.value.trim().toLowerCase(); render(); });
+$("#search").addEventListener("input", function () {
+  q = this.value.trim().toLowerCase();
+  var cb = $("#searchclear"); if (cb) cb.style.display = this.value ? "" : "none";
+  render();
+});
 
 // ---------------------------------------------------------------- boot
 function start() {
