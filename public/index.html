@@ -96,6 +96,9 @@ h3.st .k{font:400 12px -apple-system,sans-serif;color:var(--mute);
 .band.P3{color:#6B6B6B;background:#F2F1EE}
 .band.P4{color:#8A8A8A}
 .band.REP{color:#fff;background:#1F7A3D;border-color:#1F7A3D}
+.band.BNC{color:#fff;background:#8A2B20;border-color:#8A2B20}
+.who s{color:var(--faint)}
+.who .btag{font:700 9px/1.4 ui-monospace,Menlo,monospace;color:#8A2B20;background:#F6E7E4;border:1px solid #E4C7C2;border-radius:3px;padding:0 4px;margin-left:3px;vertical-align:1px}
 .askfor{color:var(--green);font-weight:700}
 .nonum{color:var(--faint);font-style:italic}
 .addr{color:var(--mute);font-size:13px;margin-top:3px}
@@ -178,6 +181,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <button class="chip" id="replychip" style="border-color:#1F7A3D;color:#1F7A3D;font-weight:600">✉ Replied<span class="k" id="t-reply">0</span></button>
       <button class="chip" id="p1cell" style="border-color:var(--gold);color:var(--green);font-weight:600">☎ P1 · direct cell<span class="k" id="t-p1">0</span></button>
       <button class="chip" id="acutechip" style="border-color:var(--red);color:var(--red);font-weight:600">⚠ Acute<span class="k" id="t-acute">0</span></button>
+      <button class="chip" id="bouncechip" style="border-color:#8A2B20;color:#8A2B20;font-weight:600">⚠ Bounced<span class="k" id="t-bounce">0</span></button>
     </div>
     <div class="row">
       <button class="chip" data-view="all">Everything<span class="k" id="n-all">0</span></button>
@@ -255,7 +259,7 @@ var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
     UNMATCHED = [],
-    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false;
+    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false;
 
 // ---------------------------------------------------------------- sign in
 function showGate(msg, kind) {
@@ -435,6 +439,17 @@ function hasReply(f){
   for (var i = 0; i < lg.length; i++) { if (/repl/i.test(lg[i].what || "")) return true; }
   return false;
 }
+// a manually-flagged hard bounce: the address is dead. Derived from the activity
+// log (so it survives reload) the same way a reply is; also honors an auto_hold
+// reason that mentions a bounce.
+function isBounced(f){
+  var lg = LOG[f.firm_id] || [], b = false, saw = false;
+  // last bounce-related entry wins, so an "un-bounced" line reverses a mis-click.
+  for (var i = 0; i < lg.length; i++) { var wht = lg[i].what || "";
+    if (/bounce/i.test(wht)) { saw = true; b = !/clear|un-?bounce|restored|good/i.test(wht); } }
+  if (!saw) { var w = WORK[f.firm_id] || {}; if (w.auto_hold_reason && /bounce/i.test(w.auto_hold_reason)) return true; }
+  return b;
+}
 function firstNameOf(f){ var p=(f.principal||"").trim(); if(!p) return "there"; var t=p.split(/[ (,\-]/)[0]; return t||"there"; }
 function smsMsgs(f){ var fn=firstNameOf(f), co=f.company||"your firm";
   var w = WORK[f.firm_id] || {};
@@ -519,6 +534,12 @@ function visible(f) {
     if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
     return !CLOSED[w.status];
   }
+  if (bounceOnly) {
+    if (!isBounced(f)) return false;
+    if (q && !matchesQ(f)) return false;
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+    return !CLOSED[w.status];
+  }
   // a typed query is a GLOBAL find: any tier, many fields, ignoring the active
   // tier/view so a firm surfaces wherever it lives (state + broker still narrow).
   if (q) {
@@ -561,7 +582,9 @@ function card(f) {
   if (f.phone) bits.push('<a class="tel" href="tel:' + esc(String(f.phone).replace(/\s/g, "")) +
       '">' + esc(f.phone) + '</a> <span class="est">' + esc(f.phone_type || "office") + "</span>");
   else bits.push('<span class="nonum">no number yet</span>');
-  if (f.email) bits.push('<a href="mailto:' + esc(f.email) + '">' + esc(f.email) + "</a>");
+  if (f.email) bits.push(isBounced(f)
+      ? '<span class="bounced"><s>' + esc(f.email) + '</s><span class="btag">BOUNCED</span></span>'
+      : '<a href="mailto:' + esc(f.email) + '">' + esc(f.email) + "</a>");
   if (f.website) bits.push('<a href="https://' + esc(String(f.website).replace(/^https?:\/\//, "")) +
       '" target="_blank" rel="noopener">' + esc(f.website) + "</a>");
   if (f.staff) bits.push("<b>" + esc(f.staff) + " staff</b>");
@@ -599,7 +622,7 @@ function card(f) {
 
   return '<div class="' + cls + '" data-fid="' + esc(f.firm_id) + '">' +
     '<div class="top"><span class="firm">' + esc(f.company) + "</span>" +
-    '<span class="badge band ' + pLabel(f) + '" title="' + (pLabel(f)==="P1"?"Tier 1 — best-fit target, still independent. Call first.":pLabel(f)==="P2"?"Tier 2 — proven adjacent line. Work after P1.":"Tier 3 roster or already acquired — lowest priority.") + '">' + pLabel(f) + "</span>" + (f.priority === "ACUTE" ? '<span class="badge acute" title="Succession risk — lone aging licensee (no successor) or shrinking headcount. Jump on it regardless of tier.">ACUTE</span>' : "") + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
+    '<span class="badge band ' + pLabel(f) + '" title="' + (pLabel(f)==="P1"?"Tier 1 — best-fit target, still independent. Call first.":pLabel(f)==="P2"?"Tier 2 — proven adjacent line. Work after P1.":"Tier 3 roster or already acquired — lowest priority.") + '">' + pLabel(f) + "</span>" + (f.priority === "ACUTE" ? '<span class="badge acute" title="Succession risk — lone aging licensee (no successor) or shrinking headcount. Jump on it regardless of tier.">ACUTE</span>' : "") + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (isBounced(f) ? '<span class="band BNC" title="email address bounced — find a new one before emailing again">⚠ BOUNCED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
     '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
     ((f.address || f.city) ? '<div class="addr">' + esc([f.address, f.city, f.state].filter(Boolean).join(", ")) + "</div>" : "") +
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
@@ -626,6 +649,11 @@ function card(f) {
       '<button class="b" data-email="3">4 \u00b7 story</button>' +
       '<button class="b" data-email="4">5 \u00b7 breakup</button>' +
       '<span style="font-size:11px;color:var(--mute)">manual send \u00b7 subject + body \u00b7 paste into Outlook</span></div>' +
+    (f.email ? '<div class="ctl">' + (isBounced(f)
+      ? '<span style="font-size:11px;color:#8A2B20;font-weight:600">\u26a0 Email bounced \u2014 find a new address, then</span>' +
+        '<button class="b" data-unbounce>\u21ba mark address good</button>'
+      : '<button class="b bad" data-bounce>\u26a0 Email bounced</button>' +
+        '<span style="font-size:11px;color:var(--mute)">flags the card, strikes the dead address, drops it from email outreach</span>') + '</div>' : '') +
     '<details class="log"><summary>Activity' + (log.length ? " (" + log.length + ")" : "") +
       "</summary><ul>" + hist + "</ul></details>" +
     "</div>";
@@ -680,6 +708,7 @@ function render() {
   var pcx = $("#p1cell"); if (pcx) pcx.classList.toggle("on", p1Only);
   var rcx = $("#replychip"); if (rcx) rcx.classList.toggle("on", replyOnly);
   var acx = $("#acutechip"); if (acx) acx.classList.toggle("on", acuteOnly);
+  var bcx = $("#bouncechip"); if (bcx) bcx.classList.toggle("on", bounceOnly);
 }
 
 var BLURB = {
@@ -852,6 +881,9 @@ function counts() {
   var ree = $("#t-reply"); if (ree) ree.textContent = repn;
   var acn = FIRMS.filter(function (f) { return f.priority === "ACUTE" && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
   var ace = $("#t-acute"); if (ace) ace.textContent = acn;
+  var bnn = FIRMS.filter(function (f) { return isBounced(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
+  var bne = $("#t-bounce"); if (bne) bne.textContent = bnn;
+  var bnc = $("#bouncechip"); if (bnc) bnc.style.display = bnn ? "" : "none";
   var rc = $("#replychip"); if (rc) rc.style.borderColor = repn ? "#1F7A3D" : "";
   var ue = $("#t-unmatched"); if (ue) ue.textContent = UNMATCHED.length;
   var ut = $("#unmatchedtoggle"); if (ut) ut.style.color = UNMATCHED.length ? "var(--red)" : "";
@@ -907,10 +939,11 @@ function stateChips() {
 document.addEventListener("click", function (e) {
   var t = e.target;
   if (t.dataset && t.dataset.tier) {
-    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; acuteOnly = false; stateChips(); render(); counts(); return; }
-  if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; acuteOnly = false; render(); counts(); return; }
-  if (t.id === "replychip") { replyOnly = !replyOnly; p1Only = false; acuteOnly = false; render(); counts(); return; }
-  if (t.id === "acutechip") { acuteOnly = !acuteOnly; p1Only = false; replyOnly = false; render(); counts(); return; }
+    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; stateChips(); render(); counts(); return; }
+  if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; acuteOnly = false; bounceOnly = false; render(); counts(); return; }
+  if (t.id === "replychip") { replyOnly = !replyOnly; p1Only = false; acuteOnly = false; bounceOnly = false; render(); counts(); return; }
+  if (t.id === "acutechip") { acuteOnly = !acuteOnly; p1Only = false; replyOnly = false; bounceOnly = false; render(); counts(); return; }
+  if (t.id === "bouncechip") { bounceOnly = !bounceOnly; p1Only = false; replyOnly = false; acuteOnly = false; render(); counts(); return; }
   if (t.id === "searchclear") { var sb2 = $("#search"); if (sb2) { sb2.value = ""; sb2.focus(); } q = ""; t.style.display = "none"; render(); return; }
   if (t.id === "slacktoggle") {
     var panel = $("#slackpanel");
@@ -1003,6 +1036,35 @@ document.addEventListener("click", function (e) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(etxt).then(function(){ toast("Email " + em.n + " copied \u2014 paste into Outlook."); }, function(){ window.prompt("Copy the email:", etxt); });
     } else { window.prompt("Copy the email:", etxt); }
+    return;
+  }
+  if (t.dataset.bounce !== undefined) {
+    if (!me) { toast("Sign in first."); return; }
+    var fbn = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!fbn) return;
+    if (!fbn.email) { toast("No email on this card."); return; }
+    if (isBounced(fbn)) { toast("Already marked bounced."); return; }
+    if (!window.confirm("Mark " + fbn.email + " as bounced?\n\nIt\u2019ll be struck out and pulled from email outreach. You can undo this on the card.")) return;
+    var la = { at: new Date().toISOString(), by_email: me.email, what: "email bounced (manual)", note: fbn.email };
+    (LOG[fid] = LOG[fid] || []).push(la);                       // optimistic \u2014 survives to render + isBounced
+    var wb = WORK[fid] || { firm_id: fid };                     // mirror the auto-hold the DB trigger will set
+    wb.auto_hold = true; wb.auto_hold_reason = "email bounced (manual)"; WORK[fid] = wb;
+    renderOne(fid); counts();
+    sb.from("activity").insert({ firm_id: fid, by_email: me.email, what: "email bounced (manual)", note: fbn.email }).then(function (r) {
+      if (r.error) { toast("Not saved: " + r.error.message); return; }
+      toast("Marked bounced \u2014 it\u2019s in the \u26a0 Bounced filter to re-enrich.");
+    });
+    return;
+  }
+  if (t.dataset.unbounce !== undefined) {
+    if (!me) { toast("Sign in first."); return; }
+    var fub = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!fub) return;
+    var ua = { at: new Date().toISOString(), by_email: me.email, what: "bounce cleared (manual)", note: fub.email || null };
+    (LOG[fid] = LOG[fid] || []).push(ua);
+    renderOne(fid); counts();
+    sb.from("activity").insert({ firm_id: fid, by_email: me.email, what: "bounce cleared (manual)", note: fub.email || null }).then(function (r) {
+      if (r.error) { toast("Not saved: " + r.error.message); return; }
+      toast("Address restored.");
+    });
     return;
   }
 });
