@@ -500,6 +500,21 @@ function emailMsgs(f){
       body:fn+" \u2014 I won\u2019t keep landing in your inbox.\n\nShould I take "+co+" off my list \u2014 or is a conversation somewhere down the road worth keeping the door open for?\n\nEither answer is a good answer. I just don\u2019t want to guess."+sig }
   ];
 }
+// Re-engagement touch for a prospect who went quiet after showing a flicker of
+// interest: a no-call, low-commitment CTA to the value range-finder. The link
+// carries ?f=<firm_id> so a submission lights this firm's card. NOT for the cold
+// 5 \u2014 keep links out of first-contact touches during mailbox warmup.
+function nurtureMsg(f){
+  var fn=firstNameOf(f), co=f.company||"your firm";
+  var w=WORK[f.firm_id]||{};
+  var sender = w.owner_email ? nameOf(w.owner_email) : (me ? (nameOf(me.email)||me.email) : "Jason Curcio");
+  var jason = /jason/i.test(sender);
+  var link = "https://bellamia124.github.io/deal-board/public/worth.html?f=" + encodeURIComponent(f.firm_id||"");
+  var sig = "\n\n"+sender+"  |  Transworld Business Advisors"+(jason?"  \u00b7  Exclusive Buy-Side":"  \u00b7  Buy-Side Team")+
+            "\n[direct line]  \u00b7  [office postal address]\nReply STOP and you won\u2019t hear from me again.";
+  return { n:"R", label:"value tool", subj:"A number for "+co+" \u2014 no call required",
+    body:fn+" \u2014 I\u2019ll make this easy.\n\nIf a call feels like too much before you know whether it\u2019s even worth it, here\u2019s the shortcut: a quick tool that gives you a rough value range for "+co+" in about 30 seconds. No obligation, nothing shared, and no one calls unless you ask.\n\n"+link+"\n\nIf the range is interesting, we talk. If it\u2019s not, you\u2019re out 30 seconds. Either way you\u2019ll know where you stand."+sig };
+}
 function contactable(f){
   var w = WORK[f.firm_id] || {};
   // reachable = has a phone/email, OR is already in play (claimed / worked / scheduled follow-up)
@@ -665,6 +680,9 @@ function card(f) {
       '<button class="b" data-email="3">4 \u00b7 story</button>' +
       '<button class="b" data-email="4">5 \u00b7 breakup</button>' +
       '<span style="font-size:11px;color:var(--mute)">manual send \u00b7 subject + body \u00b7 paste into Outlook</span></div>' +
+    '<div class="ctl"><span style="font-size:11px;color:var(--mute)">\ud83d\udd17 Re-engage:</span>' +
+      '<button class="b" data-nurture>Copy value-tool email</button>' +
+      '<span style="font-size:11px;color:var(--mute)">for a prospect gone quiet \u00b7 links their card to the range-finder</span></div>' +
     (f.email ? '<div class="ctl">' + (isBounced(f)
       ? '<span style="font-size:11px;color:#8A2B20;font-weight:600">\u26a0 Email bounced \u2014 find a new address, then</span>' +
         '<button class="b" data-unbounce>\u21ba mark address good</button>'
@@ -1057,6 +1075,14 @@ document.addEventListener("click", function (e) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(etxt).then(function(){ toast("Email " + em.n + " copied \u2014 paste into Outlook."); }, function(){ window.prompt("Copy the email:", etxt); });
     } else { window.prompt("Copy the email:", etxt); }
+    return;
+  }
+  if (t.dataset.nurture !== undefined) {
+    var fnu = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!fnu) return;
+    var nm = nurtureMsg(fnu), ntxt = "Subject: " + nm.subj + "\n\n" + nm.body;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ntxt).then(function(){ toast("Value-tool email copied \u2014 paste into Outlook."); }, function(){ window.prompt("Copy the email:", ntxt); });
+    } else { window.prompt("Copy the email:", ntxt); }
     return;
   }
   if (t.dataset.bounce !== undefined) {
