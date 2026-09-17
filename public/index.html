@@ -496,7 +496,7 @@ function emailMsgs(f){
       body:fn+" \u2014 the honest market picture, because most owners are working off a number that\u2019s years old.\n\nSurvey firms in the $1M\u2013$8M range trade around 3.5\u20136x EBITDA. Government clients, multiple licensed PLS, and recurring project work push you toward the top of that.\n\nHere\u2019s the part a financial buyer can\u2019t match: "+cred3+" \u2014 so they have a reason to pay at or above market.\n\nThe exit only happens once, and it\u2019s usually decided reactively \u2014 by health, or burnout, or timing. Knowing your number before then is the whole game.\n\nThirty minutes with your last two years of P&L and I\u2019ll give you a real one. No cost, no obligation."+sig },
     { n:"4", label:"4 \u00b7 story", subj:"How a 30-year survey firm made this call",
       body:fn+" \u2014 a quick story, because it\u2019s the closest thing to a preview you\u2019ll get.\n\n"+cred4+" had been going 30 years \u2014 twelve licensed staff, a deep government and utility base. The owner wasn\u2019t looking to sell. He was curious. That\u2019s it.\n\nWhat he didn\u2019t expect:\n\n\u2192 he kept every employee \u2014 they needed the licensed surveyors\n\u2192 the drone platform changed what his crew could win \u2014 government contracts he couldn\u2019t have touched before\n\u2192 first call to close was under 90 days\n\nHe still runs the operation today \u2014 same firm, better tools, a well-capitalized company behind him.\n\nCurious is all it takes to start. Worth fifteen minutes?"+sig },
-    { n:"5", label:"5 \u00b7 breakup", subj:"Should I close out "+co+"?",
+    { n:"6", label:"6 \u00b7 breakup", subj:"Should I close out "+co+"?",
       body:fn+" \u2014 I won\u2019t keep landing in your inbox.\n\nShould I take "+co+" off my list \u2014 or is a conversation somewhere down the road worth keeping the door open for?\n\nEither answer is a good answer. I just don\u2019t want to guess."+sig }
   ];
 }
@@ -526,6 +526,17 @@ function routerMsg(f){
             "\n[direct line]  \u00b7  [office postal address]\nReply STOP and you won\u2019t hear from me again.";
   return { n:"B", label:"router", subj:"Who handles ownership questions at "+co+"?",
     body:fn+" \u2014 you\u2019re probably not the right person for this, and that\u2019s fine.\n\nI represent a buyer active with survey and engineering firms in "+st+". I just need to reach whoever handles ownership decisions at "+co+".\n\nPoint me their way and I\u2019ll leave you out of it entirely."+sig };
+}
+// Touch 5 in the cadence is a PHONE CALL, not an email. This chip copies a short
+// opener tied to the card so you dial warm, referencing the emails they've seen.
+function callMsg(f){
+  var fn=firstNameOf(f), co=f.company||"your firm";
+  var w=WORK[f.firm_id]||{};
+  var sender = w.owner_email ? nameOf(w.owner_email) : (me ? (nameOf(me.email)||me.email) : "Jason Curcio");
+  var opener = "Hi "+fn+" \u2014 this is "+sender+" with Transworld. I\u2019m the person behind the notes you may have seen about "+co+". Did I catch you at an okay moment, or is there a better time?\n\n"
+    + "[if yes] I\u2019ll be quick: I represent one strategic buyer \u2014 not private equity \u2014 quietly acquiring survey and engineering firms in your market. I\u2019m not asking you to list. Fifteen confidential minutes so you\u2019d simply know what "+co+" is worth to them. Worth a look?\n\n"
+    + "[voicemail] "+fn+", "+sender+" at Transworld \u2014 I\u2019ve sent a couple of notes about a buyer active in your space. Nothing to list, just a confidential 15 minutes on what "+co+" is worth. Call me back at [direct line]. Thanks.";
+  return { phone: f.phone || null, text: opener };
 }
 function contactable(f){
   var w = WORK[f.firm_id] || {};
@@ -690,7 +701,8 @@ function card(f) {
       '<button class="b" data-email="1">2 \u00b7 drone</button>' +
       '<button class="b" data-email="2">3 \u00b7 value</button>' +
       '<button class="b" data-email="3">4 \u00b7 story</button>' +
-      '<button class="b" data-email="4">5 \u00b7 breakup</button>' +
+      '<button class="b" data-call title="Touch 5 is a phone call \u2014 copies a card-personalized opener + voicemail.">5 \u00b7 call</button>' +
+      '<button class="b" data-email="4">6 \u00b7 breakup</button>' +
       '<span style="font-size:11px;color:var(--faint)">|</span>' +
       '<button class="b" data-router title="Not the owner? Ask a gatekeeper to point you to the decision-maker.">B \u00b7 router</button>' +
       '<span style="font-size:11px;color:var(--mute)">manual send \u00b7 subject + body \u00b7 paste into Outlook</span></div>' +
@@ -1089,6 +1101,14 @@ document.addEventListener("click", function (e) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(etxt).then(function(){ toast("Email " + em.n + " copied \u2014 paste into Outlook."); }, function(){ window.prompt("Copy the email:", etxt); });
     } else { window.prompt("Copy the email:", etxt); }
+    return;
+  }
+  if (t.dataset.call !== undefined) {
+    var fca = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!fca) return;
+    var cm = callMsg(fca);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cm.text).then(function(){ toast("Call opener copied" + (cm.phone ? " — dial " + cm.phone : "") + "."); }, function(){ window.prompt("Copy the opener:", cm.text); });
+    } else { window.prompt("Copy the opener:", cm.text); }
     return;
   }
   if (t.dataset.router !== undefined) {
