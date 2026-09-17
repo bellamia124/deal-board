@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>What's your firm worth? · Transworld Engineering Acquisitions Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#00461C; --gold:#9D7D4F; --ink:#161512; --grey:#4A4A42;
+  --mute:#77776C; --line:#E2DFD5; --bg:#F5F4EF; --card:#ffffff; --wash:#F0EEE7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:16px/1.55 "Assistant",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:0 20px 80px}
+header{text-align:center;padding:34px 0 20px;border-bottom:3px solid var(--green)}
+.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.brand{font-family:"DM Serif Display",Georgia,serif;color:var(--green);font-size:24px;margin:5px 0 0}
+h1{font-family:"DM Serif Display",Georgia,serif;color:var(--ink);font-size:30px;line-height:1.15;margin:28px 0 6px;text-align:center}
+.lede{color:var(--grey);text-align:center;margin:0 auto 26px;max-width:520px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px 22px 24px;margin-bottom:16px;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.qn{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:3px}
+.ql{font-weight:700;font-size:17px;margin:0 0 12px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opt{border:1px solid var(--line);background:#fff;border-radius:8px;padding:11px 12px;font:inherit;font-size:14px;
+ text-align:left;cursor:pointer;transition:.12s;color:var(--ink)}
+.opt:hover{border-color:var(--gold)}
+.opt.on{border-color:var(--green);background:var(--green);color:#fff;font-weight:700}
+.hint{font-size:12.5px;color:var(--mute);margin-top:8px}
+.cta{width:100%;background:var(--green);color:#fff;border:none;border-radius:8px;padding:14px;
+ font:inherit;font-weight:700;font-size:16px;cursor:pointer;margin-top:4px}
+.cta:hover{background:#00591f}
+.cta:disabled{background:#B9BEB4;cursor:not-allowed}
+.result{display:none}
+.range{font-family:"DM Serif Display",Georgia,serif;color:var(--green);font-size:34px;text-align:center;margin:6px 0 2px}
+.rsub{text-align:center;color:var(--grey);font-size:14px;margin-bottom:16px}
+.field{margin-bottom:11px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--grey);margin-bottom:4px}
+.field input{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:7px;background:#fff}
+.field input:focus{outline:none;border-color:var(--gold)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.disc{font-size:11.5px;color:var(--mute);line-height:1.5;margin-top:16px;border-left:3px solid var(--gold);padding-left:11px}
+.foot{text-align:center;color:var(--mute);font-size:12px;margin-top:26px;line-height:1.6}
+.foot b{color:var(--green)}
+.thanks{display:none;text-align:center;padding:24px 8px}
+.thanks h2{font-family:"DM Serif Display",Georgia,serif;color:var(--green);font-size:26px;margin:0 0 8px}
+.err{color:#8A2B20;font-size:13px;margin-top:8px;display:none}
+@media(max-width:520px){.opts{grid-template-columns:1fr}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Transworld Business Advisors</div>
+    <div class="brand">Engineering Acquisitions Group</div>
+  </header>
+
+  <h1>What is your firm worth?</h1>
+  <p class="lede">A 30-second range for land surveying &amp; engineering practice owners — built on the multiples buyers are actually paying right now. No obligation, and nothing is shared.</p>
+
+  <div id="quiz">
+    <div class="card">
+      <div class="qn">Question 1 of 3</div>
+      <div class="ql">Roughly what does the firm bill in a year?</div>
+      <div class="opts" data-q="rev">
+        <button class="opt" data-v="u1">Under $1M</button>
+        <button class="opt" data-v="1-2">$1M – $2M</button>
+        <button class="opt" data-v="2-4">$2M – $4M</button>
+        <button class="opt" data-v="4-8">$4M – $8M</button>
+        <button class="opt" data-v="8-15">$8M – $15M</button>
+        <button class="opt" data-v="15+">$15M+</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="qn">Question 2 of 3</div>
+      <div class="ql">About what does it net each year, before your own compensation?</div>
+      <div class="opts" data-q="ebitda">
+        <button class="opt" data-v="u150">Under $150K</button>
+        <button class="opt" data-v="150-400">$150K – $400K</button>
+        <button class="opt" data-v="400-800">$400K – $800K</button>
+        <button class="opt" data-v="800-1500">$800K – $1.5M</button>
+        <button class="opt" data-v="1500+">$1.5M+</button>
+        <button class="opt" data-v="unsure">Not sure</button>
+      </div>
+      <div class="hint">Owner's cash flow / EBITDA — a rough figure is fine.</div>
+    </div>
+
+    <div class="card">
+      <div class="qn">Question 3 of 3</div>
+      <div class="ql">Besides you, how many licensed PE / PLS professionals are on staff?</div>
+      <div class="opts" data-q="lic">
+        <button class="opt" data-v="none">None — just me</button>
+        <button class="opt" data-v="1-2">1 – 2</button>
+        <button class="opt" data-v="3+">3 or more</button>
+      </div>
+      <div class="hint">This is the single biggest driver of the multiple a buyer will pay.</div>
+    </div>
+
+    <button class="cta" id="calc" disabled>See my range</button>
+  </div>
+
+  <div class="card result" id="result">
+    <div class="qn" style="text-align:center">Illustrative value range</div>
+    <div class="range" id="rangeTxt">—</div>
+    <div class="rsub" id="rangeSub">based on typical market multiples</div>
+    <div style="border-top:1px solid var(--line);padding-top:16px">
+      <p style="font-weight:700;margin:0 0 4px">Want the real number for <span id="fnameEcho">your firm</span>?</p>
+      <p style="color:var(--grey);font-size:14px;margin:0 0 14px">The range above is a rule of thumb. A firm-specific figure comes from a 15-minute confidential conversation and a look at two years of P&amp;L — no cost, no obligation. Tell us where to reach you.</p>
+      <div class="two">
+        <div class="field"><label>Your name</label><input id="f_name" autocomplete="name"></div>
+        <div class="field"><label>Firm name</label><input id="f_firm" autocomplete="organization"></div>
+      </div>
+      <div class="two">
+        <div class="field"><label>Email</label><input id="f_email" type="email" autocomplete="email"></div>
+        <div class="field"><label>Phone</label><input id="f_phone" type="tel" autocomplete="tel"></div>
+      </div>
+      <div class="field"><label>State</label><input id="f_state" placeholder="e.g., FL" autocomplete="address-level1"></div>
+      <button class="cta" id="send">Send me the detailed breakdown</button>
+      <div class="err" id="err">Something didn't save — please try again, or email jason@tworld.com.</div>
+      <div class="disc">Illustrative estimate only, based on typical EBITDA multiples for surveying and engineering practices. It is <b>not a valuation, appraisal, or offer</b>, and actual value depends on a full financial review. By submitting, you agree we may contact you about a confidential sale conversation; we never share your information, and one message opts you out for good.</div>
+    </div>
+  </div>
+
+  <div class="thanks" id="thanks">
+    <h2>Got it — thank you.</h2>
+    <p style="color:var(--grey)">A Transworld Engineering Acquisitions Group advisor will reach out personally, in confidence, to walk you through a firm-specific figure. Nothing is shared with anyone.</p>
+  </div>
+
+  <div class="foot">
+    <b>Transworld Business Advisors</b> · Engineering Acquisitions Group<br>
+    Business Sales • Mergers &amp; Acquisitions • Franchises<br>
+    Strictly confidential · a human reads every submission
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="../config.js"></script>
+<script>
+(function(){
+  var CFG = window.DEAL_BOARD_CONFIG || {};
+  var sb = null;
+  try { sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY); } catch(e){}
+  var params = new URLSearchParams(location.search);
+  var firmId = params.get("f") || null;
+
+  var ans = { rev:null, ebitda:null, lic:null };
+  var EB = { u150:100000, "150-400":275000, "400-800":600000, "800-1500":1150000, "1500+":2000000 };
+  // fallback: derive EBITDA from revenue midpoint * ~12% margin when "not sure"
+  var REVMID = { u1:750000, "1-2":1500000, "2-4":3000000, "4-8":6000000, "8-15":11500000, "15+":18000000 };
+  var MULT = { none:[3.0,4.0], "1-2":[3.5,5.0], "3+":[4.5,6.0] };
+
+  function fmt(n){
+    n = Math.round(n/50000)*50000;
+    if (n >= 1000000) { var m = n/1000000; return "$" + (m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)) + "M"; }
+    return "$" + Math.round(n/1000) + "K";
+  }
+
+  document.querySelectorAll(".opts").forEach(function(grp){
+    grp.addEventListener("click", function(e){
+      var b = e.target.closest(".opt"); if(!b) return;
+      grp.querySelectorAll(".opt").forEach(function(x){ x.classList.remove("on"); });
+      b.classList.add("on");
+      ans[grp.dataset.q] = b.dataset.v;
+      document.getElementById("calc").disabled = !(ans.rev && ans.ebitda && ans.lic);
+    });
+  });
+
+  var lastLow=0, lastHigh=0;
+  document.getElementById("calc").addEventListener("click", function(){
+    var eb = EB[ans.ebitda];
+    if (!eb) eb = (REVMID[ans.rev] || 1500000) * 0.12;   // "not sure" -> margin proxy
+    var m = MULT[ans.lic] || [3.0,4.5];
+    var lo = m[0], hi = m[1];
+    if (ans.rev === "8-15" || ans.rev === "15+") { lo += 0.5; hi += 0.5; }  // scale premium
+    lastLow = eb*lo; lastHigh = eb*hi;
+    document.getElementById("rangeTxt").textContent = fmt(lastLow) + " – " + fmt(lastHigh);
+    document.getElementById("rangeSub").textContent = ans.ebitda === "unsure"
+      ? "estimated from typical margins — a real figure needs your P&L"
+      : "based on a " + lo.toFixed(1).replace(/\.0$/,"") + "–" + hi.toFixed(1).replace(/\.0$/,"") + "x multiple of owner cash flow";
+    document.getElementById("quiz").style.display = "none";
+    document.getElementById("result").style.display = "block";
+    document.getElementById("result").scrollIntoView({behavior:"smooth"});
+  });
+
+  document.getElementById("f_firm").addEventListener("input", function(){
+    document.getElementById("fnameEcho").textContent = this.value.trim() || "your firm";
+  });
+
+  document.getElementById("send").addEventListener("click", function(){
+    var btn = this, err = document.getElementById("err"); err.style.display="none";
+    var rec = {
+      firm_id: firmId,
+      firm_name: document.getElementById("f_firm").value.trim() || null,
+      contact_name: document.getElementById("f_name").value.trim() || null,
+      email: document.getElementById("f_email").value.trim() || null,
+      phone: document.getElementById("f_phone").value.trim() || null,
+      state: document.getElementById("f_state").value.trim() || null,
+      revenue_band: ans.rev, profit_band: ans.ebitda, licensed_depth: ans.lic,
+      est_low: Math.round(lastLow), est_high: Math.round(lastHigh),
+      answers: ans, source: "range-finder",
+      user_agent: navigator.userAgent
+    };
+    if (!rec.email && !rec.phone) { err.textContent="Add an email or phone so we can reach you."; err.style.display="block"; return; }
+    btn.disabled = true; btn.textContent = "Sending…";
+    if (!sb) { err.style.display="block"; btn.disabled=false; btn.textContent="Send me the detailed breakdown"; return; }
+    sb.from("value_estimates").insert(rec).then(function(r){
+      if (r.error) { err.style.display="block"; btn.disabled=false; btn.textContent="Send me the detailed breakdown"; return; }
+      document.getElementById("result").style.display="none";
+      document.getElementById("thanks").style.display="block";
+      document.getElementById("thanks").scrollIntoView({behavior:"smooth"});
+    });
+  });
+})();
+</script>
+</body>
+</html>
