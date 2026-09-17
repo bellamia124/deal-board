@@ -483,6 +483,13 @@ function visible(f) {
   return !CLOSED[w.status];
 }
 
+function pLabel(f) {
+  var t = f.tier || 1;
+  if (t === 1) return (f.priority === "D") ? "P3" : "P1";
+  if (t === 2) return "P2";
+  return "P3";
+}
+
 function card(f) {
   var w = WORK[f.firm_id] || {}, log = LOG[f.firm_id] || [];
   var cls = "call" + (f.priority === "ACUTE" ? " acute" : "") +
@@ -537,8 +544,7 @@ function card(f) {
 
   return '<div class="' + cls + '" data-fid="' + esc(f.firm_id) + '">' +
     '<div class="top"><span class="firm">' + esc(f.company) + "</span>" +
-    '<span class="badge' + (f.priority === "ACUTE" ? " acute" : "") + '">' +
-      esc(f.priority || "") + " · " + esc(f.score == null ? "" : f.score) + "</span>" + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
+    '<span class="badge band ' + pLabel(f) + '" title="' + (pLabel(f)==="P1"?"Tier 1 — best-fit target, still independent. Call first.":pLabel(f)==="P2"?"Tier 2 — proven adjacent line. Work after P1.":"Tier 3 roster or already acquired — lowest priority.") + '">' + pLabel(f) + "</span>" + (f.priority === "ACUTE" ? '<span class="badge acute" title="Succession risk — lone aging licensee (no successor) or shrinking headcount. Jump on it regardless of tier.">ACUTE</span>' : "") + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
     '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
     ((f.address || f.city) ? '<div class="addr">' + esc([f.address, f.city, f.state].filter(Boolean).join(", ")) + "</div>" : "") +
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
