@@ -100,6 +100,10 @@ h3.st .k{font:400 12px -apple-system,sans-serif;color:var(--mute);
 .band.REP{color:#fff;background:#1F7A3D;border-color:#1F7A3D}
 .band.BNC{color:#fff;background:#8A2B20;border-color:#8A2B20}
 .band.EAQ{color:#fff;background:#00461C;border-color:#00461C}
+.callbtn{background:var(--green);color:#fff;border-color:var(--green);text-decoration:none;font-weight:600}
+.callbtn:hover{background:#00591f}
+.callbtn.bad{background:var(--red);border-color:var(--red)}
+.callbtn.bad:hover{background:#75241b}
 .who s{color:var(--faint)}
 .who .btag{font:700 9px/1.4 ui-monospace,Menlo,monospace;color:#8A2B20;background:#F6E7E4;border:1px solid #E4C7C2;border-radius:3px;padding:0 4px;margin-left:3px;vertical-align:1px}
 .askfor{color:var(--green);font-weight:700}
@@ -453,6 +457,16 @@ function saveWork(fid, patch, what, note) {
 
 // ---------------------------------------------------------------- rendering
 function isDirectCell(f){ return !!(f.phone_type && f.phone_type.toUpperCase().indexOf("CELL") >= 0); } // a true personal cell; office/main lines are not "direct cell"
+// normalize to a clean tel: target (E.164-ish) so Kixie's click-to-dial dials reliably
+function telNum(f){
+  var raw = String(f.phone || ""); if (!raw) return "";
+  if (raw.charAt(0) === "+") return "+" + raw.slice(1).replace(/\D/g, "");
+  var d = raw.replace(/\D/g, "");
+  if (d.length === 10) return "+1" + d;
+  if (d.length === 11 && d.charAt(0) === "1") return "+" + d;
+  return d ? "+" + d : "";
+}
+function isDNCphone(f){ return !!(f.phone_type && f.phone_type.toUpperCase().indexOf("DNC") >= 0); }
 // parse the model revenue estimate to a sortable number: range -> midpoint,
 // K/M/B expanded, "$1M+" -> 1,000,000, missing/unparseable -> -1 (sinks to bottom).
 function revNum(f){
@@ -712,6 +726,11 @@ function card(f) {
     ((f.address || f.city) ? '<div class="addr">' + esc([f.address, f.city, f.state].filter(Boolean).join(", ")) + "</div>" : "") +
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
     '<div class="ctl">' + '<select data-assign>' + opts + "</select>" + btns + "</div>" +
+    (f.phone ? '<div class="ctl">' +
+      '<a class="b callbtn' + (isDNCphone(f) ? " bad" : "") + '" href="tel:' + esc(telNum(f)) + '" title="Click-to-dial through Kixie">☎ Call ' + esc(f.phone) + '</a>' +
+      '<span style="font-size:11px;color:' + (isDNCphone(f) ? "var(--red)" : "var(--mute)") + '">' +
+        (isDNCphone(f) ? "DNC-listed — confirm before you dial" : "click-to-dial via Kixie · then log the outcome above") +
+      '</span></div>' : '') +
     '<div class="ctl"><label style="font-size:12px;color:var(--mute)">Next</label>' +
       '<input type="date" data-date value="' + esc(w.next_date || "") + '">' +
       '<input type="text" data-note placeholder="what happens next — “send the letter”, “ask about his partner”" value="' +
