@@ -166,7 +166,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 <div class="wrap">
   <header>
     <div class="me">Signed in as <b id="whoami"></b><br>
-      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" href="valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — share this link with any prospect">📝 Valuation Questionnaire</a></div>
+      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" href="../valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — share this link with any prospect">📝 Valuation Questionnaire</a></div>
     <h1>Deal Board</h1>
     <div class="sub">Buy-side mandate · <span id="stamp"></span></div>
   </header>
@@ -530,7 +530,7 @@ function nurtureMsg(f){
   var w=WORK[f.firm_id]||{};
   var sender = w.owner_email ? nameOf(w.owner_email) : (me ? (nameOf(me.email)||me.email) : "Jason Curcio");
   var jason = /jason/i.test(sender);
-  var link = "https://bellamia124.github.io/deal-board/public/value/?f=" + encodeURIComponent(f.firm_id||"");
+  var link = "https://bellamia124.github.io/deal-board/value/?f=" + encodeURIComponent(f.firm_id||"");
   var anchor = "Get a confidential value range for "+co;
   var sigPlain = "\n\n"+sender+"  |  Transworld Business Advisors"+(jason?"  \u00b7  Exclusive Buy-Side":"  \u00b7  Buy-Side Team")+
             "\n[direct line]  \u00b7  [office postal address]\nReply STOP and you won\u2019t hear from me again.";
