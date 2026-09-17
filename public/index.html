@@ -434,8 +434,16 @@ function hasReply(f){
   return false;
 }
 function firstNameOf(f){ var p=(f.principal||"").trim(); if(!p) return "there"; var t=p.split(/[ (,\-]/)[0]; return t||"there"; }
-function smsText(f){ var fn=firstNameOf(f), co=f.company||"your firm";
-  return fn+" \u2014 Jason Curcio, Transworld. I represent one NASDAQ-listed strategic buyer (not PE) quietly acquiring survey/civil firms, and they\u2019re active in your market. Not asking you to list \u2014 15 confidential minutes so you\u2019d know what "+co+" is worth to them. Worth a quick call this week? Reply STOP and you\u2019ll never hear from me again."; }
+function smsMsgs(f){ var fn=firstNameOf(f), co=f.company||"your firm";
+  var w = WORK[f.firm_id] || {};
+  // sender = the broker who owns the card; if unclaimed, whoever is signed in
+  var sender = w.owner_email ? nameOf(w.owner_email) : (me ? (nameOf(me.email) || me.email) : "your Transworld advisor");
+  return {
+    a: fn+" \u2014 "+sender+", Transworld. I represent one NASDAQ-listed strategic buyer (not PE) quietly acquiring survey/civil firms, and they\u2019re active in your market. Not asking you to list \u2014 15 confidential minutes so you\u2019d know what "+co+" is worth to them. Worth a quick call this week? Reply STOP and you\u2019ll never hear from me again.",
+    b: "Hi "+fn+" \u2014 "+sender+", Transworld M&A. Blunt question: ever thought about what happens to "+co+" when you\u2019re ready to step back? I represent a strategic buyer active in your space \u2014 might be worth a confidential 15 min. If not, tell me and I\u2019m gone.",
+    c: fn+", "+sender+" at Transworld. A NASDAQ-listed buyer I represent is quietly acquiring firms like yours nearby. Not a listing pitch \u2014 a confidential 15-min so you know your number before timing forces it. Open to it?"
+  };
+}
 function contactable(f){
   var w = WORK[f.firm_id] || {};
   // reachable = has a phone/email, OR is already in play (claimed / worked / scheduled follow-up)
@@ -558,9 +566,12 @@ function card(f) {
     '<div class="ctl"><label style="font-size:12px;color:var(--mute)">What happened?</label>' +
       '<input type="text" data-hap placeholder="the objection / how the dial went \u2014 \u201cnot interested\u201d, \u201casked who the buyer is\u201d" style="flex:1;min-width:200px">' +
       '<button class="b" data-log>Log</button></div>' +
-    (isDirectCell(f) && (f.phone_type||"").toUpperCase().indexOf("DNC") < 0 ?
-      '<div class="ctl"><button class="b" data-sms>\ud83d\udcac Copy text</button>' +
-      '<span style="font-size:11px;color:var(--mute)">1:1 only \u00b7 send from your phone \u00b7 never a blast</span></div>' : '') +
+    ((f.phone_type||"").toUpperCase().indexOf("DNC") < 0 ?
+      '<div class="ctl"><span style="font-size:11px;color:var(--mute)">\ud83d\udcac Copy text:</span>' +
+      '<button class="b" data-sms="a">A \u00b7 direct</button>' +
+      '<button class="b" data-sms="b">B \u00b7 curiosity</button>' +
+      '<button class="b" data-sms="c">C \u00b7 short</button>' +
+      '<span style="font-size:11px;color:var(--mute)">1:1 only \u00b7 from your phone \u00b7 never a blast</span></div>' : '') +
     '<details class="log"><summary>Activity' + (log.length ? " (" + log.length + ")" : "") +
       "</summary><ul>" + hist + "</ul></details>" +
     "</div>";
@@ -920,9 +931,9 @@ document.addEventListener("click", function (e) {
   }
   if (t.dataset.sms !== undefined) {
     var ff = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!ff) return;
-    var txt = smsText(ff);
+    var msgs = smsMsgs(ff), txt = msgs[t.dataset.sms] || msgs.a, lbl = String(t.dataset.sms || "a").toUpperCase();
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(txt).then(function(){ toast("Text copied \u2014 paste into Messages."); }, function(){ window.prompt("Copy the text:", txt); });
+      navigator.clipboard.writeText(txt).then(function(){ toast("Text " + lbl + " copied \u2014 paste into Messages."); }, function(){ window.prompt("Copy the text:", txt); });
     } else { window.prompt("Copy the text:", txt); }
     return;
   }
