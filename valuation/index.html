@@ -184,6 +184,16 @@ h1{font-family:"DM Serif Display",Georgia,serif;color:var(--ink);font-size:28px;
     var bt = document.getElementById("brokerThanks"); if (bt) bt.textContent = broker;
   }
 
+  // log a qualified visit (20s dwell) so the team sees who looked but didn't submit
+  try {
+    var _vf = false;
+    setTimeout(function(){
+      if (_vf || !sb) return; _vf = true;
+      sb.from("page_visits").insert({ page:"valuation", firm_id:firmId, broker_code:bcode||null,
+        dwell_ms:20000, ref:(document.referrer||"").slice(0,300)||null, ua:(navigator.userAgent||"").slice(0,300) }).then(function(){},function(){});
+    }, 20000);
+  } catch(e){}
+
   document.getElementById("intake").addEventListener("submit", function(e){
     e.preventDefault();
     var btn = document.getElementById("submit"), err = document.getElementById("err"); err.style.display="none";
