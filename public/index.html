@@ -149,6 +149,36 @@ details.log .t{color:var(--faint)}
 footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
  color:var(--mute);font-size:12px;text-align:right}
 @media (max-width:640px){.me{float:none;text-align:left;margin-top:8px}}
+/* ---- scoreboard ---- */
+#scorepanel{margin:6px 0 10px}
+.score{display:flex;flex-direction:column;gap:13px}
+.shead h2{font-family:"DM Serif Display",Georgia,serif;color:var(--green);margin:0;font-size:23px}
+.ssub{color:var(--mute);font-size:12.5px;margin-top:3px}
+.skpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.skpi{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:10px;padding:12px 13px}
+.skpi.good{border-top-color:var(--green)}
+.skpi.warn{border-top-color:var(--red)}
+.skpi .sv{font-size:24px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1}
+.skpi .sl{font-size:11px;color:var(--mute);margin-top:5px;text-transform:uppercase;letter-spacing:.05em}
+.scard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.scard h3{margin:0 0 11px;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--grey)}
+.sfunnel{display:flex;flex-direction:column;gap:7px}
+.sfrow{display:grid;grid-template-columns:92px 1fr 56px 44px;align-items:center;gap:10px}
+.sflab{font-size:12.5px;color:var(--grey);font-weight:600}
+.sftrack{background:var(--wash);border-radius:6px;height:22px;overflow:hidden}
+.sfbar{height:100%;background:linear-gradient(90deg,var(--green),#0a5a28);border-radius:6px;min-width:3px}
+.sfval{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+.sfpct{text-align:right;font-size:12px;color:var(--gold);font-weight:700}
+.sfoot{font-size:11.5px;color:var(--mute);margin:11px 0 0;line-height:1.5}
+.stbl{overflow-x:auto}
+.score table{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+.score th{text-align:right;color:var(--mute);font-weight:600;padding:5px 8px;border-bottom:1px solid var(--line);font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}
+.score th:first-child,.score td.bn{text-align:left}
+.score td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;color:var(--grey)}
+.score td.bn{font-weight:600;color:var(--ink)}
+.score td.hi{color:var(--green);font-weight:700}
+.score tr:last-child td{border-bottom:none}
+@media(max-width:560px){.sfrow{grid-template-columns:76px 1fr 46px 38px}}
 </style>
 </head>
 <body>
@@ -190,6 +220,8 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <button class="chip" id="acutechip" style="border-color:var(--red);color:var(--red);font-weight:600">⚠ Acute<span class="k" id="t-acute">0</span></button>
       <button class="chip" id="bouncechip" style="border-color:#8A2B20;color:#8A2B20;font-weight:600">⚠ Bounced<span class="k" id="t-bounce">0</span></button>
       <button class="chip" id="eaqchip" style="border-color:var(--green);color:var(--green);font-weight:600">📋 Intake<span class="k" id="t-eaq">0</span></button>
+      <span class="gap"></span>
+      <button class="chip" id="scoretoggle" style="border-color:var(--green);background:var(--green);color:#fff;font-weight:700">📊 Scoreboard</button>
     </div>
     <div class="row">
       <button class="chip" data-view="all">Everything<span class="k" id="n-all">0</span></button>
@@ -206,6 +238,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 
   <div id="slackpanel" hidden></div>
   <div id="unmatchedpanel" hidden></div>
+  <div id="scorepanel" hidden></div>
   <div id="tierblurb" class="note" hidden></div>
   <div id="list"></div>
   <footer id="foot"></footer>
@@ -269,12 +302,15 @@ var STATUSES = [
   ["No answer",     "No answer",     false],
   ["Left voicemail","Voicemail",     false],
   ["Call back",     "Call back",     false],
-  ["Interested",    "Interested",    false],
   ["Emailed",       "emailed (manual)", false],
+  ["Interested",    "Interested",    false],
+  ["Meeting",       "meeting set",   false],
+  ["LOI",           "LOI / under agreement", false],
+  ["Closed",        "closed — won", true ],
   ["Not for sale",  "Not for sale",  true ],
   ["Do not call",   "Do not call",   true ]
 ];
-var CLOSED = { "Not for sale": 1, "Do not call": 1 };
+var CLOSED = { "Closed": 1, "Not for sale": 1, "Do not call": 1 };
 
 var SLACK_STATUSES = [
   ["Working",  "Working",  false],
@@ -286,7 +322,7 @@ var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
     UNMATCHED = [], EAQ = {},
-    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false, eaqOnly = false;
+    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false, eaqOnly = false, scoreOpen = false;
 
 // ---------------------------------------------------------------- sign in
 function showGate(msg, kind) {
@@ -782,7 +818,105 @@ function renderOne(fid) {
     if (n) n.open = true; }
 }
 
+// ------------------------------------------------------------- scoreboard
+// The funnel the BOARD can measure: from owners reached downward. Email
+// sends/opens live in Instantly, not here, so this is the "reached -> deal"
+// half of the funnel — which is the metric that matters (conversations, not
+// credits). A firm sits at its furthest stage reached.
+function stageOrd(f){
+  var w = WORK[f.firm_id] || {}, s = w.status;
+  if (s === "Do not call" || s === "Not for sale") return -1; // worked & closed out
+  var ord = 0;
+  if (s === "Emailed" || s === "Calling" || s === "No answer" || s === "Left voicemail") ord = 2;
+  else if (s === "Call back") ord = 3;
+  else if (s === "Interested") ord = 4;
+  else if (s === "Meeting") ord = 5;
+  else if (s === "LOI") ord = 6;
+  else if (s === "Closed") ord = 7;
+  if (hasReply(f) && ord < 3) ord = 3;          // a reply = a live human reached
+  else if (isBounced(f) && ord < 2) ord = 2;    // a bounce still means we attempted
+  if (ord === 0 && (w.owner_email || w.next_date)) ord = 1; // claimed / scheduled = in play
+  return ord;
+}
+var SCONNECT = /repl|interested|on the phone|call back|meeting|loi|closed/i;
+function reachedWeekCount(){
+  var cut = new Date(Date.now() - 7*864e5).toISOString(), set = {};
+  Object.keys(LOG).forEach(function(fid){
+    (LOG[fid]||[]).forEach(function(a){
+      if ((a.at||"") >= cut && SCONNECT.test(a.what||"")) set[fid] = 1; });
+  });
+  return Object.keys(set).length;
+}
+function scoreHtml(){
+  var stages = [
+    {k:1,label:"In play"}, {k:2,label:"Contacted"}, {k:3,label:"Connected"},
+    {k:4,label:"Interested"}, {k:5,label:"Meeting"}, {k:6,label:"LOI"}, {k:7,label:"Closed — won"}
+  ];
+  var cum = {1:0,2:0,3:0,4:0,5:0,6:0,7:0}, dead = 0, hold = 0;
+  var byB = {}, byT = {P1:{},P2:{},P3:{}};
+  team.forEach(function(t){ byB[t.email] = {name:t.full_name, c:{1:0,2:0,3:0,4:0,5:0,6:0,7:0}}; });
+  byB._none = {name:"Unassigned", c:{1:0,2:0,3:0,4:0,5:0,6:0,7:0}};
+  FIRMS.forEach(function(f){
+    var w = WORK[f.firm_id] || {}, o = stageOrd(f);
+    if (w.auto_hold) hold++;
+    if (o === -1) { dead++; return; }
+    var s;
+    for (s=1;s<=o;s++) cum[s]++;
+    if (o >= 1){
+      var b = byB[w.owner_email] || byB._none;
+      for (s=1;s<=o;s++) b.c[s]++;
+      var pl = pLabel(f); if (byT[pl]) for (s=1;s<=o;s++) byT[pl][s] = (byT[pl][s]||0) + 1;
+    }
+  });
+  var reachedWk = reachedWeekCount(), targets = FIRMS.length, maxv = cum[1] || 1;
+  function tile(v,l,cls){ return '<div class="skpi '+(cls||'')+'"><div class="sv">'+v.toLocaleString()+'</div><div class="sl">'+l+'</div></div>'; }
+  var kpis = '<div class="skpis">'
+    + tile(targets,"Targets on list")
+    + tile(cum[1],"In play")
+    + tile(cum[3],"Owners reached","good")
+    + tile(reachedWk,"Reached this week","good")
+    + tile(cum[4],"Live conversations","good")
+    + tile(dead,"Closed out / DNC","warn")
+    + tile(hold,"On hold","warn") + '</div>';
+  var bars = stages.map(function(st,i){
+    var v = cum[st.k], prev = i ? cum[stages[i-1].k] : v;
+    var pct = prev ? Math.round(v/prev*100) : 0;
+    var wd = v ? Math.max(3, Math.round(v/maxv*100)) : 0;
+    return '<div class="sfrow"><div class="sflab">'+st.label+'</div>'
+      + '<div class="sftrack"><div class="sfbar" style="width:'+wd+'%"></div></div>'
+      + '<div class="sfval">'+v.toLocaleString()+'</div>'
+      + '<div class="sfpct">'+(i ? pct+'%' : '&mdash;')+'</div></div>';
+  }).join("");
+  var thead = '<tr><th>&nbsp;</th><th>In&nbsp;play</th><th>Cont.</th><th>Conn.</th><th>Interest</th><th>Mtg</th><th>LOI</th><th>Won</th></tr>';
+  function row(name,c){ return '<tr><td class="bn">'+esc(name)+'</td><td>'+(c[1]||0)+'</td><td>'+(c[2]||0)+'</td>'
+    + '<td class="hi">'+(c[3]||0)+'</td><td class="hi">'+(c[4]||0)+'</td><td>'+(c[5]||0)+'</td><td>'+(c[6]||0)+'</td><td>'+(c[7]||0)+'</td></tr>'; }
+  var brokerRows = team.map(function(t){ return row(byB[t.email].name, byB[t.email].c); }).join("") + row("Unassigned", byB._none.c);
+  var tierRows = ["P1","P2","P3"].map(function(p){ return row(p, byT[p]); }).join("");
+  return '<div class="score">'
+    + '<div class="shead"><h2>Pipeline scoreboard</h2>'
+    + '<div class="ssub">Measured from <b>owners reached</b> down — email sends &amp; opens live in Instantly. '
+    + 'Live &middot; ' + esc(new Date().toLocaleString()) + '</div></div>'
+    + kpis
+    + '<div class="scard"><h3>Funnel</h3><div class="sfunnel">' + bars + '</div>'
+    + '<p class="sfoot">% is conversion from the stage above. <b>' + dead.toLocaleString()
+    + '</b> worked-and-closed (DNC / not for sale) sit outside the funnel; move a live deal with the card status buttons '
+    + '(Interested &rarr; Meeting &rarr; LOI &rarr; Closed) to fill the lower stages.</p></div>'
+    + '<div class="scard"><h3>By broker</h3><div class="stbl"><table>' + thead + brokerRows + '</table></div></div>'
+    + '<div class="scard"><h3>By tier</h3><div class="stbl"><table>' + thead + tierRows + '</table></div></div>'
+    + '</div>';
+}
+
 function render() {
+  var scc = $("#scoretoggle"); if (scc) scc.classList.toggle("on", scoreOpen);
+  var sp = $("#scorepanel"), lst = $("#list");
+  if (scoreOpen) {
+    if (sp) { sp.hidden = false; sp.innerHTML = scoreHtml(); }
+    if (lst) lst.hidden = true;
+    var tb0 = $("#tierblurb"); if (tb0) tb0.hidden = true;
+    return;
+  }
+  if (sp) sp.hidden = true;
+  if (lst) lst.hidden = false;
   var shown = FIRMS.filter(visible);
   // rank by gross-revenue estimate (desc), score as tie-break; done BEFORE the
   // 400-cap so a capped list keeps the highest-value firms, and each state group
@@ -1054,6 +1188,13 @@ function stateChips() {
 // ---------------------------------------------------------------- events
 document.addEventListener("click", function (e) {
   var t = e.target;
+  if (t.id === "scoretoggle") { scoreOpen = !scoreOpen; render(); counts(); return; }
+  // any other board control leaves the scoreboard so that control's own render shows the list
+  if (scoreOpen && t && t.id !== "scoretoggle" &&
+      ((t.classList && t.classList.contains("chip")) ||
+       (t.dataset && (t.dataset.tier || t.dataset.view || t.dataset.owner || t.dataset.st)))) {
+    scoreOpen = false;
+  }
   if (t.dataset && t.dataset.tier) {
     tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; stateChips(); render(); counts(); return; }
   if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
