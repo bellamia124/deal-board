@@ -332,7 +332,7 @@ var SLACK_STATUSES = [
 var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
-    UNMATCHED = [], EAQ = {},
+    UNMATCHED = [], EAQ = {}, ISTATS = [],
     view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false, eaqOnly = false, scoreOpen = false, adminOpen = false;
 
 // ---------------------------------------------------------------- sign in
@@ -414,7 +414,8 @@ function load() {
     fetchAll("slack_activity", "at", true),
     sb.from("enrichment_queue").select("*"),
     sb.from("unmatched_replies").select("*").eq("resolved", false).order("received_at", { ascending: false }),
-    sb.from("eaq_submissions").select("firm_id,contact_name,timeline,created_at").not("firm_id", "is", null).order("created_at", { ascending: false })
+    sb.from("eaq_submissions").select("firm_id,contact_name,timeline,created_at").not("firm_id", "is", null).order("created_at", { ascending: false }),
+    sb.from("instantly_campaign_stats").select("*")
   ]).then(function (r) {
     if (r[0].error) throw r[0].error;
     team  = r[0].data || [];
@@ -430,6 +431,7 @@ function load() {
       if (q.firm_id) QUEUE[q.firm_id] = q; });
     UNMATCHED = (r[7] && r[7].data) || [];
     EAQ = {}; ((r[8] && r[8].data) || []).forEach(function (s) { if (s.firm_id && !EAQ[s.firm_id]) EAQ[s.firm_id] = s; });
+    ISTATS = (r[9] && r[9].data) || [];
   });
 }
 // a prospect returned the sell-side readiness intake for this firm — the strongest
@@ -937,6 +939,28 @@ function adminHtml(){
       +'<td>'+esc(t.city||'—')+'</td><td>'+esc((t.states||[]).join(", ")||'—')+'</td>'
       +'<td>'+(t.is_admin?'admin':'broker')+'</td></tr>';
   }).join("");
+  // Instantly campaign email-health (campaign-level rates; per-broker isn't in Instantly's API)
+  function pr(a,b){ return b ? Math.round(a/b*100)+'%' : '—'; }
+  var tot={sent:0,ou:0,ru:0,bn:0,un:0};
+  var istRows=(ISTATS||[]).map(function(c){
+    tot.sent+=c.sent||0; tot.ou+=c.opened_unique||0; tot.ru+=c.replied_unique||0; tot.bn+=c.bounced||0; tot.un+=c.unsubscribed||0;
+    return '<tr><td class="bn">'+esc(c.campaign_name||c.campaign_id||'campaign')+'</td>'
+      +'<td>'+(c.sent||0).toLocaleString()+'</td><td>'+pr(c.opened_unique,c.sent)+'</td>'
+      +'<td class="hi">'+pr(c.replied_unique,c.sent)+'</td><td>'+pr(c.bounced,c.sent)+'</td>'
+      +'<td>'+pr(c.unsubscribed,c.sent)+'</td></tr>';
+  }).join("");
+  var emailHealth='<div class="scard"><h3>Email health · Instantly (all campaigns)</h3>';
+  if (!ISTATS || !ISTATS.length || !tot.sent) {
+    emailHealth += '<p class="sfoot">No campaign sends recorded yet — rates appear here automatically once the Instantly campaign is sending'
+      + (ISTATS && ISTATS.length ? '' : '. (If it is already sending and this stays empty, the Instantly API key needs <b>campaigns:read</b> scope.)') + '</p></div>';
+  } else {
+    emailHealth += '<div class="stbl"><table>'
+      + '<tr><th>Campaign</th><th>Sent</th><th>Open%</th><th>Reply%</th><th>Bounce%</th><th>Unsub%</th></tr>'
+      + istRows
+      + '<tr><td class="bn">All</td><td>'+tot.sent.toLocaleString()+'</td><td>'+pr(tot.ou,tot.sent)+'</td>'
+      + '<td class="hi">'+pr(tot.ru,tot.sent)+'</td><td>'+pr(tot.bn,tot.sent)+'</td><td>'+pr(tot.un,tot.sent)+'</td></tr>'
+      + '</table></div><p class="sfoot"><b>Reply%</b> and <b>Bounce%</b> are the ones to watch; Open% is inflated by Apple Mail auto-opens. Bounce above ~3–5% is a list/warmup problem. Campaign-wide — per-broker reply/bounce counts are in the Per-broker table above.</p></div>';
+  }
   return '<div class="score admin">'
     + '<div class="shead"><h2>Admin · team &amp; oversight</h2>'
     + '<div class="ssub">You see every state; each broker sees only their own. '
@@ -947,6 +971,7 @@ function adminHtml(){
     + '<div class="scard"><h3>Lead quality by tier</h3><div class="stbl"><table>'
     + '<tr><th>&nbsp;</th><th>Firms</th><th>Reach&#8203;able</th><th>Direct&nbsp;cell</th><th>Cont.</th><th>Replies</th><th>Reply%</th><th>DNC/NFS</th></tr>'
     + qRows + '</table></div><p class="sfoot">Reachable = has a phone or email; Reply% = replies ÷ contacted; DNC/NFS = share disqualified. Low reachable or high DNC in a tier is a <b>list-quality</b> problem, not effort.</p></div>'
+    + emailHealth
     + '<div class="scard"><h3>Manage team</h3><div class="stbl"><table>'
     + '<tr><th>&nbsp;</th><th>Email</th><th>City</th><th>States</th><th>Role</th></tr>'+roster+'</table></div>'
     + '<div class="addform"><div class="afgrid">'
