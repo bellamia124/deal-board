@@ -148,6 +148,16 @@ h1{font-family:"DM Serif Display",Georgia,serif;color:var(--ink);font-size:30px;
   var params = new URLSearchParams(location.search);
   var firmId = params.get("f") || null;
 
+  // log a qualified visit (20s dwell) so the team sees who looked but didn't submit
+  try {
+    var _vf = false;
+    setTimeout(function(){
+      if (_vf || !sb) return; _vf = true;
+      sb.from("page_visits").insert({ page:"value", firm_id:firmId, broker_code:(params.get("b")||"").trim()||null,
+        dwell_ms:20000, ref:(document.referrer||"").slice(0,300)||null, ua:(navigator.userAgent||"").slice(0,300) }).then(function(){},function(){});
+    }, 20000);
+  } catch(e){}
+
   var ans = { rev:null, ebitda:null, lic:null };
   var EB = { u150:100000, "150-400":275000, "400-800":600000, "800-1500":1150000, "1500+":2000000 };
   // fallback: derive EBITDA from revenue midpoint * ~12% margin when "not sure"
