@@ -187,6 +187,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 .afresult{font-size:12.5px;margin-top:9px;min-height:16px}
 .afresult.ok{color:var(--green)} .afresult.bad{color:var(--red)}
 .afresult a{color:var(--green)}
+.afresult code{background:var(--wash);color:var(--ink);padding:2px 7px;border-radius:5px;font-family:"Space Mono",monospace;font-size:12.5px;user-select:all}
 </style>
 </head>
 <body>
@@ -886,8 +887,14 @@ function addTeammate(btn){
       if(res){ res.className="afresult bad"; res.textContent=(d&&d.error)||(err&&err.message)||"Could not add teammate."; }
       return;
     }
-    var okmsg = esc(d.full_name)+" added"+(d.states&&d.states.length?" for "+esc(d.states.join(", ")):"")+". "+esc(d.note)
-      +(d.link?' <a href="'+esc(d.link)+'" target="_blank" rel="noopener">open invite link</a>':"");
+    var terr = (d.states&&d.states.length) ? " for "+esc(d.states.join(", ")) : "";
+    var okmsg;
+    if (d.mode === "created") {
+      okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+". Send them these to sign in — they change the password after: "
+        + "<code>"+esc(d.email)+"</code> &nbsp; <code>"+esc(d.temp_password)+"</code>";
+    } else {
+      okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+". "+esc(d.note||"");
+    }
     reloadTeam(function(){
       if (adminOpen && $("#adminpanel")) $("#adminpanel").innerHTML = adminHtml();
       var r2=$("#addresult"); if(r2){ r2.className="afresult ok"; r2.innerHTML=okmsg; }
@@ -949,7 +956,7 @@ function adminHtml(){
     + '<input id="tm_states" placeholder="States, comma-sep (e.g. TX, AZ)">'
     + '<button class="chip on" id="addteammate">+ Add teammate</button></div>'
     + '<div id="addresult" class="afresult"></div>'
-    + '<p class="sfoot">One step adds them across the board: emails an invite to set their own password, and opens their state(s) to them.</p>'
+    + '<p class="sfoot">One step adds them across the board: creates their login, opens their state(s) to them, and hands you a one-time password to send them (no email needed — they change it after first sign-in).</p>'
     + '</div></div></div>';
 }
 function scoreHtml(){
