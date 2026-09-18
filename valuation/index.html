@@ -62,7 +62,7 @@ h1{font-family:"DM Serif Display",Georgia,serif;color:var(--ink);font-size:28px;
   <p class="lede">The starting point for a confidential valuation of a land surveying or engineering practice. A few essentials below tell us how ready your firm is and let an advisor prepare a real, defensible number before you ever commit to anything.</p>
 
   <div class="dl">
-    <div class="t"><b>Prefer the full deep-dive?</b> Download the complete fillable Pre-Valuation &amp; Due-Diligence questionnaire, complete it at your own pace, and email it back to Jason.</div>
+    <div class="t"><b>Prefer the full deep-dive?</b> Download the complete fillable Pre-Valuation &amp; Due-Diligence questionnaire, complete it at your own pace, and email it back to <span id="brokerName">your Transworld advisor</span>.</div>
     <a href="../EAQ_Pre-Valuation_Questionnaire.docx" download>Download the full form</a>
   </div>
 
@@ -154,7 +154,7 @@ h1{font-family:"DM Serif Display",Georgia,serif;color:var(--ink);font-size:28px;
 
   <div class="thanks" id="thanks">
     <h2>Received — thank you.</h2>
-    <p style="color:var(--grey);max-width:520px;margin:0 auto">Jason Curcio and the Engineering Acquisitions Group will review your firm and reach out personally, in confidence, to walk you through the next step. Nothing moves without your say-so.</p>
+    <p style="color:var(--grey);max-width:520px;margin:0 auto"><span id="brokerThanks">Your Transworld advisor</span> and the Engineering Acquisitions Group will review your firm and reach out personally, in confidence, to walk you through the next step. Nothing moves without your say-so.</p>
   </div>
 
   <div class="foot">
@@ -174,6 +174,12 @@ h1{font-family:"DM Serif Display",Georgia,serif;color:var(--ink);font-size:28px;
   var params = new URLSearchParams(location.search);
   var firmId = params.get("f") || null;
   var pf = params.get("firm"); if (pf) { var fn=document.querySelector('[name=firm_name]'); if(fn) fn.value=pf; }
+  // broker who sent this link (?b=Name) personalizes who to send the form back to
+  var broker = (params.get("b") || "").trim();
+  if (broker) {
+    var bn = document.getElementById("brokerName"); if (bn) bn.textContent = broker;
+    var bt = document.getElementById("brokerThanks"); if (bt) bt.textContent = broker;
+  }
 
   document.getElementById("intake").addEventListener("submit", function(e){
     e.preventDefault();
