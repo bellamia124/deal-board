@@ -332,7 +332,7 @@ var SLACK_STATUSES = [
 var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
-    UNMATCHED = [], EAQ = {}, ISTATS = [],
+    UNMATCHED = [], EAQ = {}, ISTATS = [], VISITS = {},
     view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false, eaqOnly = false, scoreOpen = false, adminOpen = false;
 
 // ---------------------------------------------------------------- sign in
@@ -415,7 +415,8 @@ function load() {
     sb.from("enrichment_queue").select("*"),
     sb.from("unmatched_replies").select("*").eq("resolved", false).order("received_at", { ascending: false }),
     sb.from("eaq_submissions").select("firm_id,contact_name,timeline,created_at").not("firm_id", "is", null).order("created_at", { ascending: false }),
-    sb.from("instantly_campaign_stats").select("*")
+    sb.from("instantly_campaign_stats").select("*"),
+    sb.from("page_visits").select("firm_id,page,broker_code,created_at").order("created_at", { ascending: false }).limit(2000)
   ]).then(function (r) {
     if (r[0].error) throw r[0].error;
     team  = r[0].data || [];
@@ -432,11 +433,14 @@ function load() {
     UNMATCHED = (r[7] && r[7].data) || [];
     EAQ = {}; ((r[8] && r[8].data) || []).forEach(function (s) { if (s.firm_id && !EAQ[s.firm_id]) EAQ[s.firm_id] = s; });
     ISTATS = (r[9] && r[9].data) || [];
+    VISITS = {}; ((r[10] && r[10].data) || []).forEach(function (v) { if (v.firm_id) (VISITS[v.firm_id] = VISITS[v.firm_id] || []).push(v); });
   });
 }
 // a prospect returned the sell-side readiness intake for this firm — the strongest
 // interest signal on the board.
 function isSubmitted(f){ return !!EAQ[f.firm_id]; }
+// opened a landing-page link (20s+ dwell) but hasn't returned the intake — a warm follow-up signal
+function isViewed(f){ return !!(VISITS[f.firm_id] && VISITS[f.firm_id].length) && !isSubmitted(f); }
 
 function subscribe() {
   sb.channel("board")
@@ -460,6 +464,9 @@ function subscribe() {
     })
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "eaq_submissions" }, function (p) {
       if (p.new && p.new.firm_id) { EAQ[p.new.firm_id] = p.new; renderOne(p.new.firm_id); counts(); }
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "page_visits" }, function (p) {
+      if (p.new && p.new.firm_id) { (VISITS[p.new.firm_id] = VISITS[p.new.firm_id] || []).unshift(p.new); renderOne(p.new.firm_id); }
     })
     .on("postgres_changes", { event: "*", schema: "public", table: "firms" }, function (p) {
       // enrichment (phones/emails/principals, incl. the daily monitor's writes) lands live — no reload
@@ -772,7 +779,7 @@ function card(f) {
 
   return '<div class="' + cls + '" data-fid="' + esc(f.firm_id) + '">' +
     '<div class="top"><span class="firm">' + esc(f.company) + "</span>" +
-    '<span class="badge band ' + pLabel(f) + '" title="' + (pLabel(f)==="P1"?"Tier 1 — best-fit target, still independent. Call first.":pLabel(f)==="P2"?"Tier 2 — proven adjacent line. Work after P1.":"Tier 3 roster or already acquired — lowest priority.") + '">' + pLabel(f) + "</span>" + (f.priority === "ACUTE" ? '<span class="badge acute" title="Succession risk — lone aging licensee (no successor) or shrinking headcount. Jump on it regardless of tier.">ACUTE</span>' : "") + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (isBounced(f) ? '<span class="band BNC" title="email address bounced — find a new one before emailing again">⚠ BOUNCED</span>' : "") + (isSubmitted(f) ? '<span class="band EAQ" title="returned the sell-side readiness questionnaire — hottest signal on the board; call now">📋 INTAKE</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
+    '<span class="badge band ' + pLabel(f) + '" title="' + (pLabel(f)==="P1"?"Tier 1 — best-fit target, still independent. Call first.":pLabel(f)==="P2"?"Tier 2 — proven adjacent line. Work after P1.":"Tier 3 roster or already acquired — lowest priority.") + '">' + pLabel(f) + "</span>" + (f.priority === "ACUTE" ? '<span class="badge acute" title="Succession risk — lone aging licensee (no successor) or shrinking headcount. Jump on it regardless of tier.">ACUTE</span>' : "") + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (isBounced(f) ? '<span class="band BNC" title="email address bounced — find a new one before emailing again">⚠ BOUNCED</span>' : "") + (isSubmitted(f) ? '<span class="band EAQ" title="returned the sell-side readiness questionnaire — hottest signal on the board; call now">📋 INTAKE</span>' : "") + (isViewed(f) ? '<span class="band" style="background:#F0E9DA;color:#7A5C25;border-color:transparent" title="opened their valuation/value link (20s+) but has not submitted — warm, worth a follow-up">👀 VIEWED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
     '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
     ((f.address || f.city) ? '<div class="addr">' + esc([f.address, f.city, f.state].filter(Boolean).join(", ")) + "</div>" : "") +
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
@@ -961,6 +968,25 @@ function adminHtml(){
       + '<td class="hi">'+pr(tot.ru,tot.sent)+'</td><td>'+pr(tot.bn,tot.sent)+'</td><td>'+pr(tot.un,tot.sent)+'</td></tr>'
       + '</table></div><p class="sfoot"><b>Reply%</b> and <b>Bounce%</b> are the ones to watch; Open% is inflated by Apple Mail auto-opens. Bounce above ~3–5% is a list/warmup problem. Campaign-wide — per-broker reply/bounce counts are in the Per-broker table above.</p></div>';
   }
+  // landing-page opens (page_visits): total by broker link + warm firms who opened but didn't submit
+  var vAll = 0, vByCode = {};
+  Object.keys(VISITS).forEach(function(fid){ (VISITS[fid]||[]).forEach(function(v){ vAll++; var c=v.broker_code||"—"; vByCode[c]=(vByCode[c]||0)+1; }); });
+  var BRK = (window.BROKERS && window.BROKERS.byCode) || {};
+  var vBrokerRows = Object.keys(vByCode).sort(function(a,b){return vByCode[b]-vByCode[a];}).map(function(c){
+    return '<tr><td class="bn">'+esc(BRK[c]||(c==="—"?"(no code)":c))+'</td><td>'+vByCode[c]+'</td></tr>'; }).join("");
+  var warm = FIRMS.filter(function(f){ return isViewed(f); });
+  warm.sort(function(a,b){ var la=(VISITS[a.firm_id]||[])[0], lb=(VISITS[b.firm_id]||[])[0]; return String((lb&&lb.created_at)||"").localeCompare(String((la&&la.created_at)||"")); });
+  var warmRows = warm.slice(0,20).map(function(f){ var v=(VISITS[f.firm_id]||[])[0]||{};
+    return '<tr><td class="bn">'+esc(f.company||f.firm_id)+'</td><td>'+esc(f.state||"")+'</td><td>'+esc(v.page||"")+'</td><td>'+esc(when(v.created_at))+'</td></tr>'; }).join("");
+  var visitCard = '<div class="scard"><h3>Landing-page opens · 20s+ dwell</h3>';
+  if (!vAll) {
+    visitCard += '<p class="sfoot">No qualified visits yet. A prospect who opens their /valuation or /value link for 20s+ and doesn’t submit shows up here and gets a 👀 VIEWED badge on their card — a warm follow-up.</p></div>';
+  } else {
+    visitCard += '<div class="stbl"><table style="width:auto"><tr><th>By broker link</th><th>Opens</th></tr>'+vBrokerRows+'</table></div>';
+    if (warmRows) visitCard += '<h3 style="margin-top:14px">Opened, not yet submitted ('+warm.length+')</h3><div class="stbl"><table>'
+      + '<tr><th>Firm</th><th>St</th><th>Page</th><th>Last open</th></tr>'+warmRows+'</table></div>';
+    visitCard += '<p class="sfoot">These lingered on a link but didn’t fill the form — warm, call them. Submitters move to 📋 INTAKE.</p></div>';
+  }
   return '<div class="score admin">'
     + '<div class="shead"><h2>Admin · team &amp; oversight</h2>'
     + '<div class="ssub">You see every state; each broker sees only their own. '
@@ -972,6 +998,7 @@ function adminHtml(){
     + '<tr><th>&nbsp;</th><th>Firms</th><th>Reach&#8203;able</th><th>Direct&nbsp;cell</th><th>Cont.</th><th>Replies</th><th>Reply%</th><th>DNC/NFS</th></tr>'
     + qRows + '</table></div><p class="sfoot">Reachable = has a phone or email; Reply% = replies ÷ contacted; DNC/NFS = share disqualified. Low reachable or high DNC in a tier is a <b>list-quality</b> problem, not effort.</p></div>'
     + emailHealth
+    + visitCard
     + '<div class="scard"><h3>Manage team</h3><div class="stbl"><table>'
     + '<tr><th>&nbsp;</th><th>Email</th><th>City</th><th>States</th><th>Role</th></tr>'+roster+'</table></div>'
     + '<div class="addform"><div class="afgrid">'
