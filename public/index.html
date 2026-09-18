@@ -170,7 +170,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 <div class="wrap">
   <header>
     <div class="me">Signed in as <b id="whoami"></b><br>
-      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" href="../valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — share this link with any prospect">📝 Valuation Questionnaire</a></div>
+      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" id="qlink" href="../valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — your name is baked into the link so a prospect emails the form back to you">📝 Valuation Questionnaire</a></div>
     <h1>Deal Board</h1>
     <div class="sub">Buy-side mandate · <span id="stamp"></span></div>
   </header>
@@ -758,6 +758,8 @@ function card(f) {
       '<span style="font-size:11px;color:var(--mute)">manual send \u00b7 subject + body \u00b7 paste into Outlook</span></div>' +
     '<div class="ctl"><span style="font-size:11px;color:var(--mute)">\ud83d\udd17 Re-engage:</span>' +
       '<button class="b" data-nurture>Copy value-tool email</button>' +
+      '<span style="font-size:11px;color:var(--faint)">|</span>' +
+      '<button class="b" data-qlink title="Questionnaire link with the assigned broker\u2019s name + this firm baked in">\ud83d\udcdd Copy questionnaire link</button>' +
       '<span style="font-size:11px;color:var(--mute)">for a prospect gone quiet \u00b7 links their card to the range-finder</span></div>' +
     (f.email ? '<div class="ctl">' + (isBounced(f)
       ? '<span style="font-size:11px;color:#8A2B20;font-weight:600">\u26a0 Email bounced \u2014 find a new address, then</span>' +
@@ -1169,6 +1171,17 @@ document.addEventListener("click", function (e) {
     } else { window.prompt("Copy the email:", rtxt); }
     return;
   }
+  if (t.dataset.qlink !== undefined) {
+    var fq = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!fq) return;
+    var wq = WORK[fid] || {};
+    var qbroker = wq.owner_email ? nameOf(wq.owner_email) : (me ? (nameOf(me.email) || me.email) : "");
+    var qurl = "https://servicecompanyexits.com/valuation/?f=" + encodeURIComponent(fid) +
+               (qbroker ? "&b=" + encodeURIComponent(qbroker) : "");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(qurl).then(function(){ toast("Questionnaire link copied" + (qbroker ? " (as " + qbroker + ")" : "") + "."); }, function(){ window.prompt("Copy the link:", qurl); });
+    } else { window.prompt("Copy the link:", qurl); }
+    return;
+  }
   if (t.dataset.nurture !== undefined) {
     var fnu = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!fnu) return;
     var nm = nurtureMsg(fnu);
@@ -1233,6 +1246,7 @@ $("#search").addEventListener("input", function () {
 function start() {
   $("#gate").hidden = true; $("#app").hidden = false;
   $("#whoami").textContent = nameOf(me.email) || me.email;
+  var _ql = $("#qlink"); if (_ql) _ql.href = "../valuation/?b=" + encodeURIComponent(nameOf(me.email) || me.email);
   $("#stamp").textContent = FIRMS.length.toLocaleString() + " firms · list refreshed " +
     (FIRMS[0] && FIRMS[0].refreshed_at ? new Date(FIRMS[0].refreshed_at).toLocaleDateString() : "—");
   $("#foot").textContent =
