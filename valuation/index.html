@@ -174,8 +174,11 @@ h1{font-family:"DM Serif Display",Georgia,serif;color:var(--ink);font-size:28px;
   var params = new URLSearchParams(location.search);
   var firmId = params.get("f") || null;
   var pf = params.get("firm"); if (pf) { var fn=document.querySelector('[name=firm_name]'); if(fn) fn.value=pf; }
-  // broker who sent this link (?b=Name) personalizes who to send the form back to
-  var broker = (params.get("b") || "").trim();
+  // broker who sent this link (?b=CODE) personalizes who to send the form back to.
+  // The code maps to a first name via BROKERS in config.js so the name never shows in the URL.
+  var bcode = (params.get("b") || "").trim();
+  var BR = window.BROKERS || {};
+  var broker = (bcode && BR.byCode && BR.byCode[bcode]) || "";
   if (broker) {
     var bn = document.getElementById("brokerName"); if (bn) bn.textContent = broker;
     var bt = document.getElementById("brokerThanks"); if (bt) bt.textContent = broker;
