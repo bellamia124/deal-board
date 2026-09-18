@@ -1174,9 +1174,11 @@ document.addEventListener("click", function (e) {
   if (t.dataset.qlink !== undefined) {
     var fq = FIRMS.filter(function (x) { return x.firm_id === fid; })[0]; if (!fq) return;
     var wq = WORK[fid] || {};
-    var qbroker = wq.owner_email ? nameOf(wq.owner_email) : (me ? (nameOf(me.email) || me.email) : "");
+    var bemail = wq.owner_email || (me ? me.email : "");
+    var BR = window.BROKERS || {}; var bcode = (BR.byEmail && BR.byEmail[bemail]) || "";
+    var qbroker = bcode ? (BR.byCode && BR.byCode[bcode]) : "";
     var qurl = "https://servicecompanyexits.com/valuation/?f=" + encodeURIComponent(fid) +
-               (qbroker ? "&b=" + encodeURIComponent(qbroker) : "");
+               (bcode ? "&b=" + encodeURIComponent(bcode) : "");
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(qurl).then(function(){ toast("Questionnaire link copied" + (qbroker ? " (as " + qbroker + ")" : "") + "."); }, function(){ window.prompt("Copy the link:", qurl); });
     } else { window.prompt("Copy the link:", qurl); }
@@ -1246,7 +1248,7 @@ $("#search").addEventListener("input", function () {
 function start() {
   $("#gate").hidden = true; $("#app").hidden = false;
   $("#whoami").textContent = nameOf(me.email) || me.email;
-  var _ql = $("#qlink"); if (_ql) _ql.href = "../valuation/?b=" + encodeURIComponent(nameOf(me.email) || me.email);
+  var _ql = $("#qlink"); if (_ql) { var _bc = (window.BROKERS && window.BROKERS.byEmail && window.BROKERS.byEmail[me.email]) || ""; _ql.href = "../valuation/" + (_bc ? "?b=" + encodeURIComponent(_bc) : ""); }
   $("#stamp").textContent = FIRMS.length.toLocaleString() + " firms · list refreshed " +
     (FIRMS[0] && FIRMS[0].refreshed_at ? new Date(FIRMS[0].refreshed_at).toLocaleDateString() : "—");
   $("#foot").textContent =
