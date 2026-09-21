@@ -442,6 +442,8 @@ function load() {
 function isSubmitted(f){ return !!EAQ[f.firm_id]; }
 // opened a landing-page link (20s+ dwell) but hasn't returned the intake — a warm follow-up signal
 function isViewed(f){ return !!(VISITS[f.firm_id] && VISITS[f.firm_id].length) && !isSubmitted(f); }
+// a broker explicitly pulled this firm out of email outreach (still callable). Reversible.
+function isDNE(f){ return !!(WORK[f.firm_id] && WORK[f.firm_id].do_not_email); }
 
 function subscribe() {
   sb.channel("board")
@@ -497,9 +499,17 @@ function saveWork(fid, patch, what, note) {
     status:      "status"      in patch ? patch.status      : (cur.status || "Not started"),
     next_date:   "next_date"   in patch ? patch.next_date   : (cur.next_date || null),
     next_note:   "next_note"   in patch ? patch.next_note   : (cur.next_note || null),
+    do_not_email: "do_not_email" in patch ? patch.do_not_email : (cur.do_not_email || false),
     updated_at: new Date().toISOString(),
     updated_by: me.email
   };
+  if ("do_not_email" in patch) {                       // stamp who/when only when the flag is toggled
+    row.do_not_email_at = patch.do_not_email ? new Date().toISOString() : null;
+    row.do_not_email_by = patch.do_not_email ? me.email : null;
+  } else {
+    if ("do_not_email_at" in cur) row.do_not_email_at = cur.do_not_email_at;
+    if ("do_not_email_by" in cur) row.do_not_email_by = cur.do_not_email_by;
+  }
   WORK[fid] = row; renderOne(fid); counts();          // optimistic
   sb.from("work").upsert(row, { onConflict: "firm_id" }).then(function (r) {
     if (r.error) { toast("Not saved: " + r.error.message); return; }
@@ -773,6 +783,11 @@ function card(f) {
     return '<button class="b' + (s[2] ? " bad" : "") + (w.status === s[0] ? " on" : "") +
       '" data-status="' + esc(s[0]) + '">' + esc(s[1]) + "</button>";
   }).join("");
+  // sits right after "Do not call": pulls the firm out of email outreach (still callable), toggles back off
+  btns += '<button class="b bad' + (w.do_not_email ? " on" : "") + '" data-dne title="' +
+    (w.do_not_email ? "Currently removed from email outreach — click to allow email again"
+                    : "Remove this firm from all email outreach. Still callable. Click again to undo.") +
+    '">🚫 Do not email</button>';
 
   var dueTxt = "", dueCls = "due";
   if (w.next_date) {
@@ -790,7 +805,7 @@ function card(f) {
 
   return '<div class="' + cls + '" data-fid="' + esc(f.firm_id) + '">' +
     '<div class="top"><span class="firm">' + esc(f.company) + "</span>" +
-    '<span class="badge band ' + pLabel(f) + '" title="' + (pLabel(f)==="P1"?"Tier 1 — best-fit target, still independent. Call first.":pLabel(f)==="P2"?"Tier 2 — proven adjacent line. Work after P1.":"Tier 3 roster or already acquired — lowest priority.") + '">' + pLabel(f) + "</span>" + (f.priority === "ACUTE" ? '<span class="badge acute" title="Succession risk — lone aging licensee (no successor) or shrinking headcount. Jump on it regardless of tier.">ACUTE</span>' : "") + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (isBounced(f) ? '<span class="band BNC" title="email address bounced — find a new one before emailing again">⚠ BOUNCED</span>' : "") + (isSubmitted(f) ? '<span class="band EAQ" title="returned the sell-side readiness questionnaire — hottest signal on the board; call now">📋 INTAKE</span>' : "") + (isViewed(f) ? '<span class="band" style="background:#F0E9DA;color:#7A5C25;border-color:transparent" title="opened their valuation/value link (20s+) but has not submitted — warm, worth a follow-up">👀 VIEWED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + owner + "</div>" +
+    '<span class="badge band ' + pLabel(f) + '" title="' + (pLabel(f)==="P1"?"Tier 1 — best-fit target, still independent. Call first.":pLabel(f)==="P2"?"Tier 2 — proven adjacent line. Work after P1.":"Tier 3 roster or already acquired — lowest priority.") + '">' + pLabel(f) + "</span>" + (f.priority === "ACUTE" ? '<span class="badge acute" title="Succession risk — lone aging licensee (no successor) or shrinking headcount. Jump on it regardless of tier.">ACUTE</span>' : "") + (hasReply(f) ? '<span class="band REP" title="wrote back — work this">✉ REPLIED</span>' : "") + (isBounced(f) ? '<span class="band BNC" title="email address bounced — find a new one before emailing again">⚠ BOUNCED</span>' : "") + (isSubmitted(f) ? '<span class="band EAQ" title="returned the sell-side readiness questionnaire — hottest signal on the board; call now">📋 INTAKE</span>' : "") + (isViewed(f) ? '<span class="band" style="background:#F0E9DA;color:#7A5C25;border-color:transparent" title="opened their valuation/value link (20s+) but has not submitted — warm, worth a follow-up">👀 VIEWED</span>' : "") + (w.auto_hold ? '<span class="band P2" title="'+esc(w.auto_hold_reason||"manual/replied")+'">AUTO&nbsp;OFF</span>' : "") + (isDNE(f) ? '<span class="band" style="background:#F3D9D4;color:#8A2B20;border-color:transparent" title="a broker removed this firm from email outreach — still callable">🚫 DO&nbsp;NOT&nbsp;EMAIL</span>' : "") + owner + "</div>" +
     '<div class="who">' + bits.join(' <span class="sep">·</span> ') + "</div>" +
     ((f.address || f.city) ? '<div class="addr">' + esc([f.address, f.city, f.state].filter(Boolean).join(", ")) + "</div>" : "") +
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
@@ -1539,6 +1554,15 @@ document.addEventListener("click", function (e) {
     var ntxt = "Subject: " + nm.subj + "\n\n" + nm.body;
     var nhtml = "<p><b>Subject:</b> " + esc(nm.subj) + "</p>" + nm.html;
     copyRich(nhtml, ntxt, "Value-tool email copied \u2014 paste into Outlook (link is live).");
+    return;
+  }
+  if (t.dataset.dne !== undefined) {
+    if (!me) { toast("Sign in first."); return; }
+    var wdne = WORK[fid] || { firm_id: fid };
+    var turnOn = !wdne.do_not_email;
+    // non-triggering activity phrase (no "email"/"do not call" etc.) so this stays separate from auto_hold and reverses cleanly
+    saveWork(fid, { do_not_email: turnOn }, turnOn ? "pulled from outreach (manual)" : "outreach re-enabled (manual)");
+    toast(turnOn ? "Removed from email outreach — still callable." : "Email outreach re-enabled.");
     return;
   }
   if (t.dataset.bounce !== undefined) {
