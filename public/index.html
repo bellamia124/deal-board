@@ -221,6 +221,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <button class="chip tierchip" data-tier="1">Today's calls<span class="k" id="t-1">0</span></button>
       <button class="chip tierchip" data-tier="2">Tier 2<span class="k" id="t-2">0</span></button>
       <button class="chip tierchip" data-tier="3">Tier 3 — watch list<span class="k" id="t-3">0</span></button>
+      <button class="chip" id="saaschip" style="border-color:#4A6FA5;color:#4A6FA5;font-weight:600" title="SaaS platforms — a separate national category, not part of the survey/field tiers">💻 SaaS<span class="k" id="t-saas">0</span></button>
       <span class="gap"></span>
       <button class="chip" id="slacktoggle">From Slack<span class="k" id="t-slack">0</span></button>
       <button class="chip" id="unmatchedtoggle">Unmatched replies<span class="k" id="t-unmatched">0</span></button>
@@ -333,7 +334,7 @@ var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
     UNMATCHED = [], EAQ = {}, ISTATS = [], VISITS = {},
-    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false, eaqOnly = false, scoreOpen = false, adminOpen = false;
+    view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false, eaqOnly = false, scoreOpen = false, adminOpen = false, saasOnly = false;
 
 // ---------------------------------------------------------------- sign in
 function showGate(msg, kind) {
@@ -658,6 +659,8 @@ function browseable(f){
   if ((f.tier || 1) === 1 && !f.principal && !inPlay(f)) return false;
   return true;
 }
+// SaaS is a SEPARATE national category, not one of the survey/field tiers.
+function isSaaS(f){ return (f.category || "") === "saas"; }
 function matchesQ(f){
   if (!q) return true;
   var hay = [f.company, f.principal, f.city, f.state, f.phone, f.email, f.address, f.website, f.line_of_work]
@@ -697,6 +700,13 @@ function visible(f) {
     if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
     return !CLOSED[w.status];
   }
+  if (saasOnly) {                      // the SaaS category — national, separate from the tiers
+    if (!isSaaS(f)) return false;
+    if (q && !matchesQ(f)) return false;
+    if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
+    if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
+    return !CLOSED[w.status];
+  }
   // a typed query is a GLOBAL find: any tier, many fields, ignoring the active
   // tier/view so a firm surfaces wherever it lives (state + broker still narrow).
   if (q) {
@@ -706,6 +716,7 @@ function visible(f) {
     return !CLOSED[w.status];
   }
   if (!browseable(f)) return false;  // hide untouched no-contact AND principal-unknown firms; a claimed/worked/scheduled firm always shows
+  if (isSaaS(f)) return false;       // SaaS is its own category, never in the survey/field tiers
   if ((f.tier || 1) !== tier) return false;
   if (stateFilter !== "ALL" && f.state !== stateFilter) return false;
   if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
@@ -1116,9 +1127,11 @@ function render() {
       'The highest-scoring 400 are drawn so the page stays quick \u2014 pick a state ' +
       'above, or search, to reach the rest.</div>' : "");
   var bl = $("#tierblurb");
-  bl.textContent = BLURB[tier] || ""; bl.hidden = !BLURB[tier];
+  bl.textContent = saasOnly ? "SaaS platforms — a separate national category (all states), not one of the survey/field tiers." : (BLURB[tier] || "");
+  bl.hidden = saasOnly ? false : !BLURB[tier];
   $$(".tierchip").forEach(function (c) {
-    c.classList.toggle("on", Number(c.dataset.tier) === tier); });
+    c.classList.toggle("on", !saasOnly && Number(c.dataset.tier) === tier); });
+  var ssx = $("#saaschip"); if (ssx) ssx.classList.toggle("on", saasOnly);
   $$("#states .chip").forEach(function (c) {
     c.classList.toggle("on", c.dataset.st === stateFilter); });
   $$(".board [data-view]").forEach(function (c) {
@@ -1271,6 +1284,7 @@ function counts() {
   var T = FIRMS.filter(inTerritory);   // reps: their states only; admin: everything
   var n = { all: 0, mine: 0, free: 0, due: 0, worked: 0 };
   FIRMS.forEach(function (f) {
+    if (isSaaS(f)) return;                                        // SaaS is its own category
     if ((f.tier || 1) !== tier) return;
     if (!browseable(f)) return;                                   // only what the board shows
     if (stateFilter !== "ALL" && f.state !== stateFilter) return;  // respect the active state
@@ -1286,7 +1300,7 @@ function counts() {
   [1, 2, 3].forEach(function (t) {
     var e = $("#t-" + t);
     if (e) e.textContent = FIRMS.filter(function (f) {
-      if ((f.tier || 1) !== t || !browseable(f)) return false;
+      if (isSaaS(f) || (f.tier || 1) !== t || !browseable(f)) return false;
       var w = WORK[f.firm_id] || {};
       if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
       return firmView(f, w, view);   // tier counts reflect current view + broker (state resets on tier click)
@@ -1309,6 +1323,8 @@ function counts() {
   var eqn = T.filter(function (f) { return isSubmitted(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
   var eqe = $("#t-eaq"); if (eqe) eqe.textContent = eqn;
   var eqc = $("#eaqchip"); if (eqc) eqc.style.display = eqn ? "" : "none";
+  var saasn = T.filter(function (f) { return isSaaS(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
+  var sse = $("#t-saas"); if (sse) sse.textContent = saasn;   // SaaS chip stays visible even at 0 (permanent category)
   var rc = $("#replychip"); if (rc) rc.style.borderColor = repn ? "#1F7A3D" : "";
   var ue = $("#t-unmatched"); if (ue) ue.textContent = UNMATCHED.length;
   var ut = $("#unmatchedtoggle"); if (ut) ut.style.color = UNMATCHED.length ? "var(--red)" : "";
@@ -1323,6 +1339,7 @@ function counts() {
     tile(dual, "Civil + survey") +
     tile(phone + " / " + T.length, "Reachable");
   brokerChips();
+  stateChips();   // keep the State dropdown + its per-state counts current
 }
 function tile(v, l, hot) {
   return '<div class="tile"><div class="n' + (hot ? " hot" : "") + '">' + esc(v) +
@@ -1345,19 +1362,29 @@ function brokerChips() {
         esc(t.full_name) + '<span class="k">' + (c[t.email] || 0) + '</span></button>'; }).join("");
 }
 function stateChips() {
-  var c = {};
+  // A dropdown that ALWAYS lists every state on the board (within the viewer's
+  // territory), so any tier/category + state combo is pickable even when that
+  // combo currently has 0 cards. The count in parentheses reflects the ACTIVE
+  // tier/category so the label is useful.
+  var all = {}, cur = {};
   FIRMS.forEach(function (f) {
-    if ((f.tier || 1) !== tier) return;
-    if (!browseable(f)) return;
-    var w = WORK[f.firm_id] || {};
-    if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return;
-    if (!firmView(f, w, view)) return;
-    c[f.state] = (c[f.state] || 0) + 1; });
-  var keys = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; });
-  $("#states").innerHTML = '<button class="chip on" data-st="ALL">All states</button>' +
+    if (!inTerritory(f) || !f.state) return;
+    all[f.state] = true;
+    var inSel = saasOnly ? isSaaS(f)
+      : (!isSaaS(f) && (f.tier || 1) === tier && browseable(f));
+    if (inSel) cur[f.state] = (cur[f.state] || 0) + 1;
+  });
+  var keys = Object.keys(all).sort();
+  var opts = '<option value="ALL"' + (stateFilter === "ALL" ? " selected" : "") + '>All states</option>' +
     keys.map(function (s) {
-      return '<button class="chip" data-st="' + esc(s) + '">' + esc(s) +
-             '<span class="k">' + c[s] + "</span></button>"; }).join("");
+      var n = cur[s] || 0;
+      return '<option value="' + esc(s) + '"' + (s === stateFilter ? " selected" : "") + '>' +
+        esc(s) + (n ? " (" + n + ")" : "") + '</option>';
+    }).join("");
+  $("#states").innerHTML =
+    '<label for="statesel" style="font-size:12px;color:var(--mute);margin-right:6px;font-weight:600">Show state</label>' +
+    '<select id="statesel" class="chip" style="font:inherit;font-size:13px;padding:4px 10px;cursor:pointer">' + opts + '</select>' +
+    (stateFilter !== "ALL" ? '<button class="chip" data-st="ALL" style="margin-left:6px">× all states</button>' : '');
 }
 
 // ---------------------------------------------------------------- events
@@ -1374,12 +1401,13 @@ document.addEventListener("click", function (e) {
     if (isNav && !inPanel) { scoreOpen = false; adminOpen = false; }
   }
   if (t.dataset && t.dataset.tier) {
-    tier = Number(t.dataset.tier); stateFilter = "ALL"; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; stateChips(); render(); counts(); return; }
-  if (t.id === "p1cell") { p1Only = !p1Only; replyOnly = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
-  if (t.id === "replychip") { replyOnly = !replyOnly; p1Only = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
-  if (t.id === "acutechip") { acuteOnly = !acuteOnly; p1Only = false; replyOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
-  if (t.id === "bouncechip") { bounceOnly = !bounceOnly; p1Only = false; replyOnly = false; acuteOnly = false; eaqOnly = false; render(); counts(); return; }
-  if (t.id === "eaqchip") { eaqOnly = !eaqOnly; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; render(); counts(); return; }
+    tier = Number(t.dataset.tier); saasOnly = false; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; stateChips(); render(); counts(); return; }  // state persists across tier switches
+  if (t.id === "saaschip") { saasOnly = !saasOnly; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; stateChips(); render(); counts(); return; }
+  if (t.id === "p1cell") { p1Only = !p1Only; saasOnly = false; replyOnly = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
+  if (t.id === "replychip") { replyOnly = !replyOnly; saasOnly = false; p1Only = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
+  if (t.id === "acutechip") { acuteOnly = !acuteOnly; saasOnly = false; p1Only = false; replyOnly = false; bounceOnly = false; eaqOnly = false; render(); counts(); return; }
+  if (t.id === "bouncechip") { bounceOnly = !bounceOnly; saasOnly = false; p1Only = false; replyOnly = false; acuteOnly = false; eaqOnly = false; render(); counts(); return; }
+  if (t.id === "eaqchip") { eaqOnly = !eaqOnly; saasOnly = false; p1Only = false; replyOnly = false; acuteOnly = false; bounceOnly = false; render(); counts(); return; }
   if (t.id === "searchclear") { var sb2 = $("#search"); if (sb2) { sb2.value = ""; sb2.focus(); } q = ""; t.style.display = "none"; render(); return; }
   if (t.id === "slacktoggle") {
     var panel = $("#slackpanel");
@@ -1431,7 +1459,7 @@ document.addEventListener("click", function (e) {
   if (t.dataset && t.dataset.view) { view = t.dataset.view; render(); return; }
   var _ob = t.closest && t.closest("[data-owner]");
   if (_ob) { ownerFilter = _ob.dataset.owner; render(); return; }
-  if (t.dataset && t.dataset.st)   { stateFilter = t.dataset.st; render(); return; }
+  if (t.dataset && t.dataset.st)   { stateFilter = t.dataset.st; render(); counts(); return; }
   var box = t.closest && t.closest(".call"); if (!box) return;
   var fid = box.dataset.fid;
   if (t.dataset.status !== undefined) {
@@ -1543,6 +1571,7 @@ document.addEventListener("click", function (e) {
 });
 
 document.addEventListener("change", function (e) {
+  if (e.target && e.target.id === "statesel") { stateFilter = e.target.value; render(); counts(); return; }
   var ssel = e.target.closest && e.target.closest("[data-sassign]");
   if (ssel) {
     var sid = Number(ssel.closest(".slack").dataset.slack), to = ssel.value || null;
