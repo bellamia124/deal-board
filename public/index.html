@@ -1281,7 +1281,8 @@ function firmView(f, w, v) {
   return !CLOSED[w.status];
 }
 function counts() {
-  var T = FIRMS.filter(inTerritory);   // reps: their states only; admin: everything
+  var inState = function (f) { return stateFilter === "ALL" || f.state === stateFilter; };
+  var T = FIRMS.filter(function (f) { return inTerritory(f) && inState(f); });   // territory + the active State filter, applied to EVERY count/tile/category below
   var n = { all: 0, mine: 0, free: 0, due: 0, worked: 0 };
   FIRMS.forEach(function (f) {
     if (isSaaS(f)) return;                                        // SaaS is its own category
@@ -1301,9 +1302,10 @@ function counts() {
     var e = $("#t-" + t);
     if (e) e.textContent = FIRMS.filter(function (f) {
       if (isSaaS(f) || (f.tier || 1) !== t || !browseable(f)) return false;
+      if (stateFilter !== "ALL" && f.state !== stateFilter) return false;   // tier counts honor the active State too
       var w = WORK[f.firm_id] || {};
       if (ownerFilter !== "ALL" && w.owner_email !== ownerFilter) return false;
-      return firmView(f, w, view);   // tier counts reflect current view + broker (state resets on tier click)
+      return firmView(f, w, view);
     }).length;
   });
   var open = SLACK.filter(function (a) { return !SLACK_CLOSED[a.status]; }).length;
