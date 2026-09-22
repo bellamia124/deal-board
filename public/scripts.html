@@ -16,66 +16,19 @@
     padding:20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .sheet{max-width:1040px;margin:0 auto;background:var(--card);
     box-shadow:0 2px 20px rgba(0,0,0,.12);border-radius:6px;overflow:hidden}
-  /* header */
   .hd{background:var(--green);color:#fff;padding:22px 30px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
   .hd .wm{font-family:Georgia,"Times New Roman",serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
   .hd h1{font-family:Georgia,"Times New Roman",serif;font-weight:700;margin:4px 0 0;font-size:34px;line-height:1}
   .hd p{margin:6px 0 0;font-size:13px;color:#cbdccb}
   .hd .tag{text-align:right;font-size:11px;color:#a9c3ac;letter-spacing:.06em}
   .rule{height:5px;background:var(--gold)}
+  .ctx{padding:9px 30px;background:#f0ece0;border-bottom:1px solid var(--line);font-size:12px;color:var(--mute);display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center}
+  .ctx b{color:var(--green)}
+  .ctx .you{color:var(--gold);font-weight:700}
   .body{padding:24px 30px 10px}
   h2{font-family:Georgia,serif;color:var(--green);font-size:16px;margin:0 0 12px;letter-spacing:.01em}
-  .sec{margin-bottom:22px}
-  /* steps */
-  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-  .step{background:var(--wash);border:1px solid var(--line);border-radius:6px;padding:12px 12px 13px;position:relative}
-  .step .n{width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-weight:700;
-    display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:8px}
-  .step h3{margin:0 0 4px;font-size:13.5px;color:var(--green)}
-  .step p{margin:0;font-size:12px;color:var(--mute);line-height:1.42}
-  /* two-col */
   .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:22px}
-  /* mock card */
-  .mock{border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:6px;padding:12px 14px;background:#fff;position:relative}
-  .mock .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .mock .firm{font-weight:700;font-size:15px}
-  .badge{font:700 10px/1.4 ui-monospace,Menlo,monospace;padding:2px 7px;border:1px solid currentColor;border-radius:3px}
-  .b-p1{color:var(--green);background:#e7efe9}
-  .b-auto{color:var(--gold);background:#f3eee4}
-  .mock .who{color:var(--mute);font-size:12.5px;margin-top:5px}
-  .mock .acq{display:inline-block;margin-top:8px;font:700 10px/1.5 ui-monospace,monospace;color:var(--bad);background:#f4e4e4;border:1px solid var(--bad);padding:1px 7px;border-radius:3px}
-  .mock .btns{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px}
-  .chip{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fbfaf7;color:var(--ink)}
-  .chip.on{background:var(--green);color:#fff;border-color:var(--green)}
-  .chip.new{border-color:var(--gold);color:var(--gold);font-weight:700}
-  .chip.bad{border-color:var(--bad);color:var(--bad)}
-  .mock .nextrow{margin-top:9px;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mute)}
-  .mock .nextrow input{border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-size:11px;color:#888;background:#fff}
-  /* callouts */
   .callouts{list-style:none;margin:10px 0 0;padding:0}
-  .callouts li{display:flex;gap:8px;margin-bottom:9px;font-size:12.3px;line-height:1.45}
-  .callouts .k{flex:0 0 84px;font-weight:700;color:var(--green);font-family:ui-monospace,Menlo,monospace;font-size:11px}
-  .callouts .bad .k{color:var(--bad)}
-  /* action legend */
-  .legend{background:var(--wash);border:1px solid var(--line);border-radius:6px;padding:13px 15px}
-  .legend .row{display:flex;gap:8px;margin-bottom:9px;align-items:flex-start}
-  .legend .row:last-child{margin-bottom:0}
-  .legend .lab{flex:0 0 108px}
-  .legend .desc{font-size:12px;color:var(--mute);line-height:1.42}
-  .win{background:var(--green);color:#fff;border-radius:6px;padding:14px 16px;margin-top:14px;text-align:center}
-  .win .t{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700}
-  .win .h{font-family:Georgia,serif;font-size:19px;margin:4px 0 0;font-weight:700}
-  .win .s{font-size:11.5px;color:#cbdccb;margin-top:3px}
-  .note{font-size:11.5px;color:var(--mute);margin-top:12px;line-height:1.45;border-left:3px solid var(--gold);padding-left:10px}
-  /* full email copy blocks */
-  .emailfull{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:5px;overflow:hidden;background:#fff}
-  .emailfull .ehdr{background:var(--wash);padding:6px 11px;font-size:12px;color:var(--gold);border-bottom:1px solid var(--line)}
-  .emailfull .ehdr b{color:var(--gold)}
-  .emailfull .esub{padding:7px 11px 0;font-size:12px;font-weight:700;color:var(--ink)}
-  .emailfull .ebody{padding:6px 11px 10px;font:12px/1.5 ui-monospace,Menlo,monospace;color:var(--ink);white-space:pre-wrap}
-  .emailfull .eswap{background:#f6f2ea;border-top:1px solid var(--line);padding:6px 11px;font-size:11px;color:var(--mute);line-height:1.4}
-  .emailfull .eswap b{color:var(--gold)}
-  /* rules bar */
   .rules{background:#2a2f2b;color:#fff;padding:16px 30px;margin-top:8px}
   .rules h2{color:var(--gold);margin:0 0 10px}
   .rules ul{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:7px 26px}
@@ -84,7 +37,7 @@
   .rules b{color:#fff}
   .foot{padding:10px 30px 20px;font-size:10.5px;color:var(--mute);display:flex;justify-content:space-between}
   @media print{body{background:#fff;padding:0}.sheet{box-shadow:none;border-radius:0;max-width:none}}
-  @media (max-width:760px){.steps{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}.rules ul{grid-template-columns:1fr}}
+  @media (max-width:760px){.cols{grid-template-columns:1fr}.rules ul{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -98,17 +51,19 @@
     <div class="tag">Business Sales · Mergers &amp; Acquisitions · Franchises</div>
   </div>
   <div class="rule"></div>
-  <div id="scripts" style="padding:20px 30px 6px;border-top:1px solid var(--line);scroll-margin-top:12px">
+  <div class="ctx" id="sc-context"><span>Generic script — open it from a firm’s card on the board to personalize the firm and your name.</span></div>
+
+  <div style="padding:20px 30px 6px;border-top:1px solid var(--line)">
     <h2>Outreach scripts</h2>
     <p style="font-size:12px;color:var(--mute);margin:0 0 13px;line-height:1.45">The whole script is here — call arc, text touch, gatekeeper and objection handlers. Everywhere: describe the buyer, never name it; never say the estimate out loud.</p>
     <div class="cols">
       <div>
         <h3 style="margin:0 0 8px;color:var(--green);font-size:13.5px">The 60-second call</h3>
         <div style="font-size:12.5px;color:var(--ink);line-height:1.5">
-          <div style="margin-bottom:11px"><span style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em">OPEN</span><br>“Hi — is this [First]? … [First], you don’t know me, and this is a cold call. Give me twenty seconds to tell you why I called, and then you can tell me to get lost.”<div style="font-size:11px;color:var(--mute);margin-top:3px"><i>Radical honesty is a pattern-interrupt; offering “get lost” hands control back — people stay when they know they can leave.</i></div></div>
-          <div style="margin-bottom:11px"><span style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em">FRAME</span><br>“I’m Jason Curcio with Transworld. I represent one NASDAQ-listed strategic buyer — not a private-equity fund — actively acquiring survey and civil firms. I’ve closed nine of these, two here in Florida. I’m not calling to list your company. I’m calling because they’re looking in your market.”<div style="font-size:11px;color:var(--mute);margin-top:3px"><i>Authority through true specifics + scarcity; the take-away (“not here to list you”) removes what they’re defending against.</i></div></div>
+          <div style="margin-bottom:11px"><span style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em">OPEN</span><br><span id="sc-open">“Hi — is this [First]? … [First], you don’t know me, and this is a cold call. Give me twenty seconds to tell you why I called, and then you can tell me to get lost.”</span><div style="font-size:11px;color:var(--mute);margin-top:3px"><i>Radical honesty is a pattern-interrupt; offering “get lost” hands control back — people stay when they know they can leave.</i></div></div>
+          <div style="margin-bottom:11px"><span style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em">FRAME</span><br><span id="sc-frame">“I’m [Your Name] with Transworld. I represent one NASDAQ-listed strategic buyer — not a private-equity fund — actively acquiring survey and civil firms. I’ve closed nine of these, two here in Florida. I’m not calling to list your company. I’m calling because they’re looking in your market.”</span><div style="font-size:11px;color:var(--mute);margin-top:3px"><i>Authority through true specifics + scarcity; the take-away (“not here to list you”) removes what they’re defending against.</i></div></div>
           <div style="margin-bottom:11px"><span style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em">DISARM</span><br>“And look — I know exactly how this sounds. Probably like every other broker who’s ever cold-called you.”<div style="font-size:11px;color:var(--mute);margin-top:3px"><i>Labeling — say their objection before they do and it loses its charge.</i></div></div>
-          <div style="margin-bottom:11px"><span style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em">HOOK</span><br>“Can I ask you something? How much real thought have you given to what happens to the firm when you’re ready to slow down?”<div style="font-size:11px;color:var(--mute);margin-top:3px"><i>A calibrated question — makes them talk and surfaces the succession gap in their own words. Let the silence sit.</i></div></div>
+          <div style="margin-bottom:11px"><span style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em">HOOK</span><br><span id="sc-hook">“Can I ask you something, [First]? How much real thought have you given to what happens to the firm when you’re ready to slow down?”</span><div style="font-size:11px;color:var(--mute);margin-top:3px"><i>A calibrated question — makes them talk and surfaces the succession gap in their own words. Let the silence sit.</i></div></div>
           <div style="margin-bottom:11px"><span style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em">RAISE STAKES</span><br>“Here’s what I see with owners at your level: you build something for thirty years, and the exit only happens once — usually reactively, when health or burnout forces the timing. That’s when the price is worst. A strong buyer showing up while you’re still running hard is the rare version.”<div style="font-size:11px;color:var(--mute);margin-top:3px"><i>Loss aversion + status; reframes doing nothing as the risk. True, so it survives scrutiny.</i></div></div>
           <div><span style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em">CLOSE</span><br>“I’m not asking you to decide anything today. Fifteen minutes, confidential, just us — and you’ll walk away knowing more about what your firm is worth to a strategic buyer than you do right now. You decide if it goes further. Worst case, you’re out fifteen minutes. What does Thursday look like?”<div style="font-size:11px;color:var(--mute);margin-top:3px"><i>Micro-commitment + risk reversal; assumptive close on the calendar — ask WHEN, never IF.</i></div></div>
         </div>
@@ -116,9 +71,9 @@
       <div>
         <h3 style="margin:0 0 8px;color:var(--green);font-size:13.5px">The text touch <span style="font-weight:400;color:var(--bad)">— manual, 1:1, after a call</span></h3>
         <div style="font-size:11px;color:var(--bad);background:#f4e4e4;border:1px solid var(--bad);border-radius:5px;padding:8px 10px;margin-bottom:9px;line-height:1.4"><b>TCPA:</b> texting a cell is $500–$1,500 per text. Send by hand, one at a time, from your phone — never a blast, never a DNC number. The board’s <b>Copy text</b> button (cards with a mobile number) fills it for you.</div>
-        <div style="font:12px/1.45 ui-monospace,Menlo,monospace;background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:8px 10px;margin-bottom:7px"><b style="font-family:inherit;color:var(--gold)">A · direct</b><br>[First] — Jason Curcio, Transworld. I represent one NASDAQ-listed strategic buyer (not PE) quietly acquiring survey/civil firms, and they’re active in your market. Not asking you to list — 15 confidential minutes so you’d know what [Firm] is worth to them. Worth a quick call this week? Reply STOP and you’ll never hear from me again.</div>
-        <div style="font:12px/1.45 ui-monospace,Menlo,monospace;background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:8px 10px;margin-bottom:7px"><b style="font-family:inherit;color:var(--gold)">B · curiosity</b><br>Hi [First] — Jason Curcio, Transworld M&amp;A. Blunt question: ever thought about what happens to [Firm] when you’re ready to step back? I represent a strategic buyer active in your space — might be worth a confidential 15 min. If not, tell me and I’m gone.</div>
-        <div style="font:12px/1.45 ui-monospace,Menlo,monospace;background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:8px 10px"><b style="font-family:inherit;color:var(--gold)">C · short</b><br>[First], Jason Curcio at Transworld. A NASDAQ-listed buyer I represent is quietly acquiring firms like yours nearby. Not a listing pitch — a confidential 15-min so you know your number before timing forces it. Open to it?</div>
+        <div style="font:12px/1.45 ui-monospace,Menlo,monospace;background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:8px 10px;margin-bottom:7px"><b style="font-family:inherit;color:var(--gold)">A · direct</b><br><span id="sc-ta">[First] — [Your Name], Transworld. I represent one NASDAQ-listed strategic buyer (not PE) quietly acquiring survey/civil firms, and they’re active in your market. Not asking you to list — 15 confidential minutes so you’d know what [Firm] is worth to them. Worth a quick call this week? Reply STOP and you’ll never hear from me again.</span></div>
+        <div style="font:12px/1.45 ui-monospace,Menlo,monospace;background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:8px 10px;margin-bottom:7px"><b style="font-family:inherit;color:var(--gold)">B · curiosity</b><br><span id="sc-tb">Hi [First] — [Your Name], Transworld M&amp;A. Blunt question: ever thought about what happens to [Firm] when you’re ready to step back? I represent a strategic buyer active in your space — might be worth a confidential 15 min. If not, tell me and I’m gone.</span></div>
+        <div style="font:12px/1.45 ui-monospace,Menlo,monospace;background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:8px 10px"><b style="font-family:inherit;color:var(--gold)">C · short</b><br><span id="sc-tc">[First], [Your Name] at Transworld. A NASDAQ-listed buyer I represent is quietly acquiring firms like yours nearby. Not a listing pitch — a confidential 15-min so you know your number before timing forces it. Open to it?</span></div>
       </div>
     </div>
   </div>
@@ -127,7 +82,7 @@
     <h2>Gatekeeper &amp; the three objections</h2>
     <div style="background:var(--wash);border-left:3px solid var(--gold);border-radius:4px;padding:9px 12px;margin-bottom:13px">
       <div style="font:700 10px/1 ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.05em;margin-bottom:4px">GATEKEEPER</div>
-      <div style="font-size:12.5px;color:var(--ink);line-height:1.45">“Hi — Jason Curcio calling for [Owner]. It’s a confidential business matter about the firm, not a vendor pitch. Is he in?”</div>
+      <div style="font-size:12.5px;color:var(--ink);line-height:1.45" id="sc-gate">“Hi — [Your Name] calling for [Owner]. It’s a confidential business matter about the firm, not a vendor pitch. Is he in?”</div>
       <div style="font-size:11px;color:var(--mute);margin-top:4px"><i>Pattern-interrupt for the front desk — “confidential business matter” is true and sits outside what they’re trained to block.</i></div>
     </div>
     <div class="cols">
@@ -153,7 +108,7 @@
     <ul>
       <li><b>Never name the buyer</b> — describe the profile; the name comes 1:1, under NDA.</li>
       <li><b>Never quote the revenue estimate</b> — it's a model number, not a fact.</li>
-      <li><b>A person presses dial every time</b> — no predictive/parallel dialing; if a number is DNC-listed, confirm first.</li>
+      <li><b>A person presses dial every time</b> — no predictive/parallel dialing; a 🚫 DNC-listed card has no dial button — don't dial it.</li>
       <li><b>Log the outcome</b> on the card so the follow-up doesn't get lost.</li>
     </ul>
   </div>
@@ -162,5 +117,78 @@
     <span>Call scripts &amp; objections · <a href="guide.html" style="color:inherit">full team guide →</a></span>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="./config.js?v=20260918b"></script>
+<script>
+(function () {
+  var CFG = window.DEAL_BOARD_CONFIG || {}, BR = window.BROKERS || { byCode: {}, byEmail: {} };
+  var P = new URLSearchParams(location.search), fid = P.get("f"), bcode = P.get("b");
+  function set(id, txt){ var el = document.getElementById(id); if (el) el.textContent = txt; }
+  function firstName(p){ var s = String(p || "").trim().split(/\s+/)[0]; return s || "[First]"; }
+
+  // Render the personalizable copy from the firm + the signed-in broker.
+  function fill(firm, sender, hasSession){
+    sender = sender || "[Your Name]";
+    var jason = /jason/i.test(sender);
+    var co    = (firm && firm.company)   ? firm.company   : "[Firm]";
+    var owner = (firm && firm.principal) ? firm.principal : "[Owner]";
+    var fn    = (firm && firm.principal) ? firstName(firm.principal) : "[First]";
+
+    // context banner
+    var ctx = document.getElementById("sc-context");
+    if (ctx){
+      if (firm){
+        ctx.innerHTML = '<span>Card: <b>' + co + '</b> · ask for <b>' + owner + '</b></span>'
+          + '<span>You: <span class="you">' + sender + '</span> ' + (jason ? '(first-person voice)' : '(team voice — “our team”)') + '</span>';
+      } else if (hasSession){
+        ctx.innerHTML = '<span>You: <span class="you">' + sender + '</span> ' + (jason ? '(first-person voice)' : '(team voice)') + '</span>'
+          + '<span>Open this from a firm’s card to fill in that firm.</span>';
+      }
+    }
+
+    // OPEN + HOOK
+    set("sc-open", "“Hi — is this " + fn + "? … " + fn + ", you don’t know me, and this is a cold call. Give me twenty seconds to tell you why I called, and then you can tell me to get lost.”");
+    set("sc-hook", "“Can I ask you something, " + fn + "? How much real thought have you given to what happens to the firm when you’re ready to slow down?”");
+
+    // FRAME — first-person for Jason, team voice for everyone else
+    set("sc-frame", jason
+      ? "“I’m " + sender + " with Transworld. I represent one NASDAQ-listed strategic buyer — not a private-equity fund — actively acquiring survey and civil firms. I’ve closed nine of these, two here in Florida. I’m not calling to list your company. I’m calling because they’re looking in your market.”"
+      : "“I’m " + sender + " on the Transworld buy-side team. We represent one NASDAQ-listed strategic buyer — not a private-equity fund — actively acquiring survey and civil firms. Our team has closed nine of these, two here in Florida. I’m not calling to list your company. I’m calling because they’re looking in your market.”");
+
+    // GATEKEEPER
+    set("sc-gate", "“Hi — " + sender + " calling for " + owner + ". It’s a confidential business matter about the firm, not a vendor pitch. Is he in?”");
+
+    // TEXT A / B / C  (mirrors the board's Copy-text chips)
+    set("sc-ta", fn + " — " + sender + ", Transworld. I represent one NASDAQ-listed strategic buyer (not PE) quietly acquiring survey/civil firms, and they’re active in your market. Not asking you to list — 15 confidential minutes so you’d know what " + co + " is worth to them. Worth a quick call this week? Reply STOP and you’ll never hear from me again.");
+    set("sc-tb", "Hi " + fn + " — " + sender + ", Transworld M&A. Blunt question: ever thought about what happens to " + co + " when you’re ready to step back? I represent a strategic buyer active in your space — might be worth a confidential 15 min. If not, tell me and I’m gone.");
+    set("sc-tc", fn + ", " + sender + " at Transworld. A NASDAQ-listed buyer I represent is quietly acquiring firms like yours nearby. Not a listing pitch — a confidential 15-min so you know your number before timing forces it. Open to it?");
+  }
+
+  // fall back to a name from the ?b code if there's no session
+  var codeName = (bcode && BR.byCode[bcode]) ? BR.byCode[bcode] : null;
+
+  if (!window.supabase || !CFG.SUPABASE_URL) { if (codeName) fill(null, codeName, false); return; }
+  var sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  });
+
+  sb.auth.getSession().then(function (r) {
+    var s = r && r.data && r.data.session, email = s && s.user && s.user.email;
+    if (!s) { if (codeName) fill(null, codeName, false); return; }   // not signed in this browser
+    Promise.all([
+      sb.from("team").select("full_name,email").eq("active", true),
+      fid ? sb.from("firms").select("company,principal,state").eq("firm_id", fid).maybeSingle()
+          : Promise.resolve({ data: null })
+    ]).then(function (res) {
+      var team = (res[0] && res[0].data) || [];
+      var firm = (res[1] && res[1].data) || null;
+      var row  = team.filter(function (t) { return t.email === email; })[0];
+      var sender = row ? row.full_name : (codeName || email);
+      fill(firm, sender, true);
+    }).catch(function () { fill(null, codeName || null, true); });
+  }).catch(function () { if (codeName) fill(null, codeName, false); });
+})();
+</script>
 </body>
 </html>
