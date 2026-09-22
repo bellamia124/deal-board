@@ -208,7 +208,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 <div id="app" hidden>
 <div class="wrap">
   <header>
-    <div class="me">Signed in as <b id="whoami"></b><br>
+    <div class="me">Signed in as <b id="whoami"></b><span id="mykixie" class="mykixie"></span><br>
       <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" id="qlink" href="../valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — your name is baked into the link so a prospect emails the form back to you">📝 Valuation Questionnaire</a></div>
     <h1>Deal Board</h1>
     <div class="sub">Buy-side mandate · <span id="stamp"></span></div>
@@ -534,6 +534,13 @@ function telNum(f){
   return d ? "+" + d : "";
 }
 function isDNCphone(f){ return !!(f.phone_type && f.phone_type.toUpperCase().indexOf("DNC") >= 0); }
+// each broker's own Kixie outbound line (their caller ID). Keyed by board sign-in email.
+var KIXIE_LINES = {
+  "jasoncurcio@tworld.com": { num: "561-269-3560", label: "West Palm Beach" },
+  "mnicoletti@tworld.com":  { num: "772-208-6921", label: "Vero Beach" },
+  "tcurcio@tworld.com":     { num: "213-214-1196", label: "Los Angeles" }
+};
+function myKixie(){ return (me && KIXIE_LINES[String(me.email || "").toLowerCase()]) || null; }
 // parse the model revenue estimate to a sortable number: range -> midpoint,
 // K/M/B expanded, "$1M+" -> 1,000,000, missing/unparseable -> -1 (sinks to bottom).
 function revNum(f){
@@ -811,10 +818,12 @@ function card(f) {
     (f.why ? '<div class="why">' + esc(f.why) + "</div>" : "") +
     '<div class="ctl">' + '<select data-assign>' + opts + "</select>" + btns + "</div>" +
     (f.phone ? '<div class="ctl">' +
-      '<a class="b callbtn' + (isDNCphone(f) ? " bad" : "") + '" href="tel:' + esc(telNum(f)) + '" title="Click-to-dial through Kixie">☎ Call ' + esc(f.phone) + '</a>' +
-      '<span style="font-size:11px;color:' + (isDNCphone(f) ? "var(--red)" : "var(--mute)") + '">' +
-        (isDNCphone(f) ? "DNC-listed — confirm before you dial" : "click-to-dial via Kixie · then log the outcome above") +
-      '</span></div>' : '') +
+      (isDNCphone(f)
+        ? '<span class="b bad" style="cursor:not-allowed;opacity:.75" title="On the Do-Not-Call list — do not dial this number">☎ ' + esc(f.phone) + '</span>' +
+          '<span style="font-size:11px;color:var(--red);font-weight:600">🚫 DNC-listed — do not dial</span>'
+        : '<a class="b callbtn" href="tel:' + esc(telNum(f)) + '" title="Click-to-dial through Kixie PowerCall — dials from your assigned line">☎ Call ' + esc(f.phone) + '</a>' +
+          '<span style="font-size:11px;color:var(--mute)">click-to-dial via Kixie · then log the outcome above</span>') +
+      '</div>' : '') +
     '<div class="ctl"><label style="font-size:12px;color:var(--mute)">Next</label>' +
       '<input type="date" data-date value="' + esc(w.next_date || "") + '">' +
       '<input type="text" data-note placeholder="what happens next — “send the letter”, “ask about his partner”" value="' +
@@ -1622,6 +1631,10 @@ $("#search").addEventListener("input", function () {
 function start() {
   $("#gate").hidden = true; $("#app").hidden = false;
   $("#whoami").textContent = nameOf(me.email) || me.email;
+  var _kx = myKixie(), _kxel = $("#mykixie");
+  if (_kxel) _kxel.innerHTML = _kx
+    ? ' <span class="sep">·</span> <span title="Your Kixie outbound line — this is the caller ID that shows on every lead you dial. Dial through the Kixie PowerCall extension.">&#9742; your line <b>' + _kx.num + '</b> <span style="color:var(--mute)">(' + _kx.label + ')</span></span>'
+    : ' <span class="sep">·</span> <span style="color:var(--mute)" title="No Kixie line mapped to your sign-in — ask Jason to add one.">&#9742; no Kixie line mapped</span>';
   var _ql = $("#qlink"); if (_ql) { var _bc = (window.BROKERS && window.BROKERS.byEmail && window.BROKERS.byEmail[me.email]) || ""; _ql.href = "../valuation/" + (_bc ? "?b=" + encodeURIComponent(_bc) : ""); }
   $("#stamp").textContent = FIRMS.length.toLocaleString() + " firms · list refreshed " +
     (FIRMS[0] && FIRMS[0].refreshed_at ? new Date(FIRMS[0].refreshed_at).toLocaleDateString() : "—");
