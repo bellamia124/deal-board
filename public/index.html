@@ -444,6 +444,8 @@ function isSubmitted(f){ return !!EAQ[f.firm_id]; }
 function isViewed(f){ return !!(VISITS[f.firm_id] && VISITS[f.firm_id].length) && !isSubmitted(f); }
 // a broker explicitly pulled this firm out of email outreach (still callable). Reversible.
 function isDNE(f){ return !!(WORK[f.firm_id] && WORK[f.firm_id].do_not_email); }
+// flagged off-appetite (e.g. geotechnical, materials-testing/NDT labs) — reversible in DB; hidden from the callable board + email automation
+function isOffAppetite(f){ return !!f.off_appetite; }
 
 function subscribe() {
   sb.channel("board")
@@ -669,6 +671,7 @@ function inPlay(f){
 // what a browse view (tiers/Today's calls) shows + counts: reachable, and has a
 // principal name — unless it's already claimed/worked/scheduled (never hide work in progress).
 function browseable(f){
+  if (isOffAppetite(f)) return false;  // removed from the appetite (geotech / testing labs) — never browse or count
   if (!inTerritory(f)) return false;   // reps see only their states; admin sees all
   if (!contactable(f)) return false;
   // require a known principal ONLY on the tier-1 call list; tier 2/3 are broad
@@ -685,6 +688,7 @@ function matchesQ(f){
   return hay.indexOf(q) >= 0;
 }
 function visible(f) {
+  if (isOffAppetite(f)) return false;  // removed from the appetite — hidden from every board view + search
   if (!inTerritory(f)) return false;   // reps see only their states; admin sees all
   var w = WORK[f.firm_id] || {};
   if (p1Only) {
