@@ -63,6 +63,15 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
 .chiplbl{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px;margin-right:2px}
 .chip{background:#fff;border:1px solid var(--line);color:var(--green);border-radius:6px;padding:3px 7px;font:600 12px Assistant;cursor:pointer}
 .chip:hover{background:#e7f0e9}
+.logrow{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.loglbl{font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.4px;margin-right:2px}
+.logbtn{background:var(--green);color:#fff;border:0;border-radius:6px;padding:3px 8px;font:600 12px Assistant;cursor:pointer}
+.logbtn.g{background:#fff;color:var(--green);border:1px solid var(--line)}
+.logbtn:hover{opacity:.88}
+.hist{margin-top:6px;border-top:1px dashed var(--line);padding-top:6px;display:flex;flex-direction:column;gap:3px}
+.histrow{font-size:12px;color:var(--mute)}
+.histrow b{color:var(--ink);font-weight:600}
+.histmore{font-size:11px;color:var(--gold);cursor:pointer;font-weight:700;background:none;border:0;padding:0;text-align:left}
 .hatnote{font-size:12px;color:var(--mute);margin:-6px 0 14px}
 .hatnote b{color:var(--red)}
 @media(max-width:640px){.form{grid-template-columns:1fr}.form .full{grid-column:1}}
@@ -104,7 +113,9 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
         <option value="claimed">Claimed</option>
         <option value="contacted">Contacted</option>
         <option value="interested">Interested</option>
+        <option value="meeting">Meeting</option>
         <option value="loi">LOI</option>
+        <option value="closed">Closed (won)</option>
         <option value="passed">Passed</option>
       </select>
       <input id="q" placeholder="Search company / owner / city" style="min-width:220px">
@@ -156,7 +167,7 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
 <script>
 const cfg = window.DEAL_BOARD_CONFIG || {};
 const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
-let ME=null, MANDATES=[], CURRENT=null, FIRMS=[];
+let ME=null, MANDATES=[], CURRENT=null, FIRMS=[], ACT={};
 const $=id=>document.getElementById(id);
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -229,6 +240,10 @@ async function loadFirms(){
   const {data,error}=await sb.from('mandate_firms').select('*').eq('mandate_id',CURRENT).order('score',{ascending:false});
   if(error){toast('Load error: '+error.message);return;}
   FIRMS=data||[];
+  // load activity log for this mandate, grouped by firm
+  ACT={};
+  const {data:acts}=await sb.from('mandate_activity').select('*').eq('mandate_id',CURRENT).order('at',{ascending:false});
+  (acts||[]).forEach(a=>{(ACT[a.mandate_firm_id]=ACT[a.mandate_firm_id]||[]).push(a);});
   // vertical filter options
   const verts=[...new Set(FIRMS.map(f=>f.vertical).filter(Boolean))].sort();
   const vs=$('vertSel');vs.innerHTML='<option value="">All verticals</option>'+verts.map(v=>`<option>${esc(v)}</option>`).join('');
@@ -247,13 +262,30 @@ function render(){
   $('cards').innerHTML=rows.map(cardHtml).join('');
   bindCards();
 }
-function cardHtml(f){
+function fmtWhen(ts){try{const d=new Date(ts);return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}catch(e){return '';}}
+function isDNE(f){return !!f.do_not_email;}
+function isBounced(f){const r=(ACT[f.id]||[]);for(const a of r){const w=(a.what||'').toLowerCase();if(w.includes('bounce cleared'))return false;if(w.includes('bounced'))return true;}return false;}
+function histHtml(f,expanded){
+  const rows=(ACT[f.id]||[]);
+  if(!rows.length) return '';
+  const show=expanded?rows:rows.slice(0,3);
+  let h='<div class="hist">'+show.map(a=>`<div class="histrow">${fmtWhen(a.at)} — <b>${esc(a.what||'')}</b>${a.note?': '+esc(a.note):''}</div>`).join('');
+  if(rows.length>3&&!expanded) h+=`<button class="histmore" data-more="1">▾ show all ${rows.length}</button>`;
+  h+='</div>';
+  return h;
+}
+function cardHtml(f,expanded){
   const th=telHref(f.phone);
   const dnc=f.do_not_call;
   const tel = f.phone ? (dnc
       ? `<span class="tel dnc" title="DNC — confirm before dialing">☎ ${esc(f.phone)} · DNC</span>`
       : `<a class="tel" href="tel:${esc(th)}" title="Kixie click-to-dial">☎ ${esc(f.phone)}</a>`) : '';
-  const mail = f.email ? `<a class="mail" href="mailto:${esc(f.email)}">${esc(f.email)}</a>` : '<span class="muted">no email yet</span>';
+  const bounced=isBounced(f);
+  const mail = f.email
+      ? (bounced
+          ? `<span class="mail" style="text-decoration:line-through;color:var(--red)">${esc(f.email)}</span> <span class="flag f-warn">BOUNCED</span>`
+          : `<a class="mail" href="mailto:${esc(f.email)}">${esc(f.email)}</a>`)
+      : '<span class="muted">no email yet</span>';
   const flags=[];
   const nn=(f.next_note||'');
   if(/verified/i.test(nn)) flags.push('<span class="flag f-ver">email verified</span>');
@@ -261,9 +293,10 @@ function cardHtml(f){
   if(/namesake|unconfirmed/i.test(nn)) flags.push('<span class="flag f-warn">principal unconfirmed</span>');
   const who = f.principal ? `<span class="who2">${esc(f.principal)}</span>${f.title?` <span class="muted">· ${esc(f.title)}</span>`:''}` : '<span class="muted">owner not yet enriched</span>';
   const rev = f.revenue_estimate ? `<span class="rev">${esc(f.revenue_estimate.replace(/\s*\(.*\)/,''))}</span>` : '';
-  const opts=['new','claimed','contacted','interested','loi','passed'].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('');
+  const opts=['new','claimed','contacted','interested','meeting','loi','closed','passed'].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('');
+  const badges=(f.do_not_call?'<span class="flag f-warn">🚫 DNC</span>':'')+(isDNE(f)?'<span class="flag f-warn">🚫 No email</span>':'')+(bounced?'<span class="flag f-warn">⚠ Bounced</span>':'');
   return `<div class="card" data-id="${f.id}">
-    <div class="statrow"><span class="pill ${pillClass(f.score)}">${f.score||0}</span><span class="vert">${esc(f.vertical||'')}</span></div>
+    <div class="statrow"><span class="pill ${pillClass(f.score)}">${f.score||0}</span><span class="vert">${esc(f.vertical||'')}</span>${badges}</div>
     <h3>${esc(f.company)}</h3>
     <div class="rowline">${who}</div>
     <div class="rowline">${rev} ${f.city?`<span class="muted">· ${esc(f.city)}, ${esc(f.state||'')}</span>`:''}</div>
@@ -280,12 +313,26 @@ function cardHtml(f){
       <span class="chiplbl">✉ Listing</span>
       <button class="chip" data-copy="b-intro">1·intro</button><button class="chip" data-copy="b-value">2·value</button><button class="chip" data-copy="b-breakup">3·breakup</button><button class="chip" data-copy="b-call">☎ opener</button>
     </div>
+    <div class="logrow">
+      <span class="loglbl">Log</span>
+      <button class="logbtn" data-log="call:called">☎ Called</button><button class="logbtn g" data-log="call:noanswer">No answer</button><button class="logbtn g" data-log="call:vm">Left VM</button>
+      <button class="logbtn" data-log="email:acq">✉ Emailed·Acq</button><button class="logbtn" data-log="email:list">✉ Emailed·List</button>
+    </div>
+    <div class="logrow">
+      <span class="loglbl">Flags</span>
+      <button class="logbtn g" data-flag="dnc">${f.do_not_call?'✓ ':''}🚫 Do not call</button>
+      <button class="logbtn g" data-flag="dne">${isDNE(f)?'✓ ':''}🚫 Do not email</button>
+      <button class="logbtn g" data-flag="bounce">${bounced?'↺ Address good':'⚠ Bounced'}</button>
+    </div>
+    ${histHtml(f,expanded)}
     <div class="statrow">
       <select class="st sm">${opts}</select>
-      <button class="btn ghost sm act">Log note</button>
+      <button class="btn ghost sm act">Note</button>
     </div>
   </div>`;
 }
+const LOGMAP={'call:called':'Called — connected','call:noanswer':'Called — no answer','call:vm':'Called — left voicemail','email:acq':'Emailed — acquisition','email:list':'Emailed — listing'};
+function pushAct(id,what,note){(ACT[id]=ACT[id]||[]).unshift({at:new Date().toISOString(),what:what,note:note||''});}
 function bindCards(){
   document.querySelectorAll('#cards .card').forEach(c=>{
     const id=c.dataset.id;
@@ -293,14 +340,35 @@ function bindCards(){
       const status=e.target.value;
       const {error}=await sb.from('mandate_firms').update({status}).eq('id',id);
       if(error){toast('Save failed: '+error.message);return;}
-      await logActivity(id,'status → '+status,'');
+      await logActivity(id,'Status → '+status,''); pushAct(id,'Status → '+status,'');
       const f=FIRMS.find(x=>x.id===id); if(f)f.status=status;
-      toast('Status saved');
+      toast('Status saved'); render();
     };
     c.querySelector('.act').onclick=async ()=>{
-      const note=prompt('Log a note / call outcome for this firm:'); if(!note)return;
-      await logActivity(id,'note',note); toast('Logged');
+      const note=prompt('Log a note for this firm:'); if(!note)return;
+      await logActivity(id,'Note',note); pushAct(id,'Note',note); toast('Note logged'); render();
     };
+    c.querySelectorAll('[data-log]').forEach(b=>b.onclick=async()=>{
+      const f=FIRMS.find(x=>x.id===id); if(!f)return;
+      const what=LOGMAP[b.dataset.log]||b.dataset.log;
+      b.disabled=true;
+      await logActivity(id,what,''); pushAct(id,what,'');
+      if(f.status==='new'){ await sb.from('mandate_firms').update({status:'contacted'}).eq('id',id); f.status='contacted'; }
+      toast(what+' logged'); render();
+    });
+    c.querySelectorAll('[data-flag]').forEach(b=>b.onclick=async()=>{
+      const f=FIRMS.find(x=>x.id===id); if(!f)return;
+      const k=b.dataset.flag;
+      if(k==='dnc'){const v=!f.do_not_call; const{error}=await sb.from('mandate_firms').update({do_not_call:v}).eq('id',id); if(error){toast('Save failed');return;} f.do_not_call=v; const w=v?'Marked do-not-call':'Cleared do-not-call'; await logActivity(id,w,''); pushAct(id,w,'');}
+      else if(k==='dne'){const v=!f.do_not_email; const{error}=await sb.from('mandate_firms').update({do_not_email:v}).eq('id',id); if(error){toast('Save failed');return;} f.do_not_email=v; const w=v?'Marked do-not-email':'Cleared do-not-email'; await logActivity(id,w,''); pushAct(id,w,'');}
+      else if(k==='bounce'){const w=isBounced(f)?'bounce cleared (manual)':'email bounced (manual)'; await logActivity(id,w,''); pushAct(id,w,'');}
+      toast('Saved'); render();
+    });
+    c.querySelectorAll('[data-more]').forEach(b=>b.onclick=()=>{
+      const f=FIRMS.find(x=>x.id===id); if(!f)return;
+      const el=document.querySelector('.card[data-id="'+id+'"]');
+      if(el){ el.outerHTML=cardHtml(f,true); bindCards(); }
+    });
     c.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{
       const f=FIRMS.find(x=>x.id===id); if(!f)return;
       const k=b.dataset.copy;
