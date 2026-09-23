@@ -447,7 +447,7 @@ function cardHtml(f,expanded){
     <div class="statrow"><span class="pill ${pillClass(f.score)}">${f.score||0}</span><span class="vert">${esc(f.vertical||'')}</span>${badges}</div>
     <h3>${esc(f.company)}</h3>
     <div class="rowline">${who}</div>
-    <div class="rowline">${rev} ${f.city?`<span class="muted">· ${esc(f.city)}, ${esc(f.state||'')}</span>`:''}</div>
+    <div class="rowline">${rev} ${(f.address||f.city)?`<span class="muted">📍 ${esc([f.address,f.city,f.state].filter(Boolean).join(', '))}</span>`:'<span class="muted">📍 address pending</span>'}</div>
     <div class="rowline">${tel}</div>
     <div class="rowline">${mail}</div>
     ${flags.length?`<div class="flags">${flags.join('')}</div>`:''}
