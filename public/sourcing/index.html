@@ -453,9 +453,17 @@ function renderMandateList(){
     <span class="pill ${m.side==='sell'?'p-mid':'p-hi'}">${m.side}</span>
     <span class="muted">${(m.verticals||[]).length} verticals · ${(m.states||[]).join(', ')||'any state'}</span>
     <span class="muted">${m.status}</span>
-    <button class="btn ghost sm ed" data-id="${m.id}" style="margin-left:auto">Edit</button>
+    <button class="btn ghost sm vb" data-view="${m.id}" style="margin-left:auto">🔎 View on board</button>
+    <button class="btn ghost sm ed" data-id="${m.id}">Edit</button>
   </div>`).join('');
   el.querySelectorAll('.ed').forEach(b=>b.onclick=()=>openEditor(MANDATES.find(m=>m.id===b.dataset.id)));
+  el.querySelectorAll('.vb').forEach(b=>b.onclick=()=>viewOnBoard(b.dataset.view));
+}
+function viewOnBoard(id){
+  $('mandateSel').value=id; CURRENT=id;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on', x.dataset.tab==='board'));
+  $('tab-board').classList.remove('hide'); $('tab-buybox').classList.add('hide');
+  loadFirms();
 }
 $('newMandate').onclick=()=>openEditor(null);
 $('cancelMandate').onclick=()=>$('editorWrap').classList.add('hide');
