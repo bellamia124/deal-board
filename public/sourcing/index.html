@@ -129,6 +129,8 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
         <option value="passed">Passed</option>
       </select>
       <select id="stateSel"><option value="">All states</option></select>
+      <select id="citySel"><option value="">All cities</option></select>
+      <select id="sortSel"><option value="score">Sort: Score</option><option value="city">Sort: City (A–Z)</option><option value="company">Sort: Company (A–Z)</option></select>
       <select id="revSel">
         <option value="">Revenue: any</option>
         <option value="1000000">$1M+</option>
@@ -390,10 +392,12 @@ async function loadFirms(){
   // state filter options (industry/subcategory come from the static taxonomy)
   const states=[...new Set(FIRMS.map(f=>f.state).filter(Boolean))].sort();
   $('stateSel').innerHTML='<option value="">All states</option>'+states.map(s=>`<option>${esc(s)}</option>`).join('');
+  const cities=[...new Set(FIRMS.map(f=>f.city).filter(Boolean))].sort();
+  $('citySel').innerHTML='<option value="">All cities</option>'+cities.map(c=>`<option>${esc(c)}</option>`).join('');
   render();
 }
-['statusSel','stateSel','revSel','sdeSel','empSel','q'].forEach(id=>$(id).addEventListener('input',render));
-$('clearFilters').onclick=()=>{['catSel','subSel','statusSel','stateSel','revSel','sdeSel','empSel'].forEach(id=>$(id).value='');$('subSel').innerHTML='<option value="">All subcategories</option>';$('q').value='';render();};
+['statusSel','stateSel','citySel','sortSel','revSel','sdeSel','empSel','q'].forEach(id=>$(id).addEventListener('input',render));
+$('clearFilters').onclick=()=>{['catSel','subSel','statusSel','stateSel','citySel','revSel','sdeSel','empSel'].forEach(id=>$(id).value='');$('sortSel').value='score';$('subSel').innerHTML='<option value="">All subcategories</option>';$('q').value='';render();};
 // Shared sourcing call — used by the Pull button AND auto-source on create.
 async function runSource(mid){
   const {data,error}=await sb.functions.invoke('source-mandate',{body:{mandate_id:mid,enrich:'waterfall'}});
@@ -419,14 +423,16 @@ function revNum(f){return parseMoney(f.revenue_estimate);}
 function sdeNum(f){return parseMoney(f.ebitda_estimate);}
 function render(){
   const cat=$('catSel').value, sub=$('subSel').value, st=$('statusSel').value, q=$('q').value.trim().toLowerCase();
-  const stf=$('stateSel').value, rmin=+($('revSel').value||0), smin=+($('sdeSel').value||0), emin=+($('empSel').value||0);
+  const stf=$('stateSel').value, cty=$('citySel').value, sortBy=$('sortSel').value, rmin=+($('revSel').value||0), smin=+($('sdeSel').value||0), emin=+($('empSel').value||0);
   const vertMatch=f=>{const fv=(f.vertical||'').toLowerCase();
     if(sub){const s=sub.toLowerCase();return fv.includes(s)||s.split(/[^a-z0-9]+/).some(w=>w.length>=4&&fv.includes(w));}
     if(cat){const c=catList().find(x=>x.n===cat);if(!c)return true;const terms=new Set();[c.n].concat(c.s).forEach(t=>t.toLowerCase().split(/[^a-z0-9]+/).forEach(w=>{if(w.length>=4)terms.add(w);}));return [...terms].some(t=>fv.includes(t));}
     return true;};
-  let rows=FIRMS.filter(f=>vertMatch(f)&&(st==='dropped'?f.status==='dropped':f.status!=='dropped')&&(!st||f.status===st)&&(!stf||f.state===stf)
+  let rows=FIRMS.filter(f=>vertMatch(f)&&(st==='dropped'?f.status==='dropped':f.status!=='dropped')&&(!st||f.status===st)&&(!stf||f.state===stf)&&(!cty||f.city===cty)
     &&(!rmin||revNum(f)>=rmin)&&(!smin||sdeNum(f)>=smin)&&(!emin||(+f.staff||0)>=emin));
   if(q) rows=rows.filter(f=>[f.company,f.principal,f.city,f.email,f.domain].some(x=>(x||'').toLowerCase().includes(q)));
+  if(sortBy==='city') rows.sort((a,b)=>(a.city||'￿').localeCompare(b.city||'￿')||(a.company||'').localeCompare(b.company||''));
+  else if(sortBy==='company') rows.sort((a,b)=>(a.company||'').localeCompare(b.company||''));
   $('boardEmpty').classList.toggle('hide', rows.length>0);
   if(!rows.length){$('boardEmpty').textContent='No matches.';}
   $('count').textContent=rows.length+' of '+FIRMS.length+' firms';
