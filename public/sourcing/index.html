@@ -57,6 +57,12 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
 .toast.show{opacity:1}
 .login{max-width:360px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.gcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:12px 0}
+.gcard h3{margin:0 0 6px;font-family:'DM Serif Display',Georgia,serif;font-weight:400;color:var(--green);font-size:17px}
+.gcard ul,.gcard ol{margin:6px 0 0;padding-left:20px}
+.gcard li{margin:4px 0;line-height:1.45}
+.gcard p{margin:4px 0;line-height:1.5}
+.gtag{display:inline-block;background:var(--gold);color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:1px 8px;margin-left:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.4px}
 .hide{display:none!important}
 .kx{font-size:11px;color:var(--mute)}
 .chips{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:2px}
@@ -89,6 +95,7 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
 <div class="tabs" id="tabs">
   <button data-tab="board" class="on">Board</button>
   <button data-tab="buybox">Buy Box</button>
+  <button data-tab="guide">❓ Guide</button>
 </div>
 
 <div id="loginView" class="hide">
@@ -192,6 +199,73 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
       </div>
     </div>
   </div>
+
+  <!-- GUIDE TAB -->
+  <div class="wrap hide" id="tab-guide">
+    <div style="max-width:860px">
+      <h2 style="font-family:'DM Serif Display',serif;color:var(--green);font-weight:400;font-size:24px;margin-bottom:4px">How to use your private sourcing workspace</h2>
+      <p class="muted" style="margin-top:0">This is <b>your</b> space. Only you see your buy boxes and firms — walled off from the team ZenaTech board and from every other broker (including whoever else uses this page). What you do here is invisible to them, and theirs to you.</p>
+
+      <div class="gcard"><h3>The 3 tabs</h3>
+        <ul>
+          <li><b>Board</b> — the companies you've sourced. Filter them, work them, log activity. This is your search surface.</li>
+          <li><b>Buy Box</b> — where you define what you're hunting for (a "mandate": verticals, states, size).</li>
+          <li><b>Guide</b> — this page.</li>
+        </ul>
+      </div>
+
+      <div class="gcard"><h3>How leads actually get here <span class="gtag">read this</span></h3>
+        <p>This page does <b>not</b> pull companies off the internet by itself. You tell Claude what to source — for example <i>"source pressure washing, FL, $1–5M"</i> — and Claude runs the search, scores every company for fit, and drops them onto your Board. Then you work them here. There's no "search the web" button on purpose; Claude is the engine and the throttle on cost.</p>
+      </div>
+
+      <div class="gcard"><h3>Step 1 — Define a Buy Box</h3>
+        <ol>
+          <li>Buy Box tab → <b>+ New buy box</b>.</li>
+          <li>Name it, choose <b>Buy-side</b> (finding companies for an acquirer) or <b>Sell-side</b> (finding owners to list).</li>
+          <li>Build your verticals with <b>+ Add from taxonomy</b> — pick an industry, then a subcategory (104 industries, 1,146 subcategories).</li>
+          <li>Set states and size bands. Save.</li>
+          <li>Tell Claude to source it. Use <b>🔎 View on board</b> to jump straight to that box's results.</li>
+        </ol>
+      </div>
+
+      <div class="gcard"><h3>Step 2 — Work the Board</h3>
+        <ul>
+          <li>Pick a buy box in the top-left dropdown.</li>
+          <li>Filter by <b>industry → subcategory</b>, state, revenue, SDE/EBITDA, employees, or type a name in search.</li>
+          <li>Each card is one company. The <b>score pill (0–100)</b> is fit — higher is better.</li>
+        </ul>
+      </div>
+
+      <div class="gcard"><h3>What each card does</h3>
+        <ul>
+          <li><b>Owner, email, phone, revenue, city</b> up top.</li>
+          <li><b>✉ Acquisition</b> vs <b>✉ Listing</b> chips — copy a ready email (intro / value / breakup) or a call opener. <b>One hat per owner:</b> you're either the buyer's agent <i>or</i> the seller's agent for a given company, never both.</li>
+          <li><b>Log</b> row — record Called / No answer / Left VM / Emailed. First touch moves the firm from <i>new</i> → <i>contacted</i> automatically.</li>
+          <li><b>Flags</b> — Do-not-call / Do-not-email / Bounced.</li>
+          <li><b>Status</b> — new → contacted → interested → meeting → LOI → closed (or passed).</li>
+          <li><b>Note</b> — log a free-text note.</li>
+        </ul>
+      </div>
+
+      <div class="gcard"><h3>Enrichment (owner + email + phone)</h3>
+        <p>Companies land with a score and firm info first. Claude adds the <b>owner name and work email</b> on the firms worth working — just ask ("enrich the top firms"). <b>Direct cell numbers</b> are pulled only when you ask, because they cost more. Reality check: not every small firm has an owner or email in the data — that's a data-coverage limit, not a missing feature.</p>
+      </div>
+
+      <div class="gcard"><h3>📊 Stats</h3>
+        <p>The <b>Stats</b> link (top of the page) shows your pipeline funnel, outreach logged, reachability, and a 30-day activity trend — built only from your own data.</p>
+      </div>
+
+      <div class="gcard" style="border-left:4px solid var(--gold)"><h3>Compliance — non-negotiable</h3>
+        <ul>
+          <li>Calls are human click-to-dial only. A <b>Do-not-call</b> flagged number is never auto-dialed.</li>
+          <li>Every email carries a CAN-SPAM footer (address + opt-out). Honor any opt-out immediately.</li>
+          <li>In Acquisition outreach, the buyer/equity group is never named.</li>
+        </ul>
+      </div>
+
+      <p class="muted" style="font-size:13px">Stuck or want a new vertical sourced? Just ask Claude.</p>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -265,6 +339,7 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
   const t=b.dataset.tab;
   $('tab-board').classList.toggle('hide', t!=='board');
   $('tab-buybox').classList.toggle('hide', t!=='buybox');
+  $('tab-guide').classList.toggle('hide', t!=='guide');
   if(t==='buybox') renderMandateList();
 });
 
