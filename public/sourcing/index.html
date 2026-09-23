@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Private Sourcing — Transworld</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--green:#00461C;--gold:#9D7D4F;--ink:#1f2420;--mute:#5c6560;--line:#e4e0d6;--bg:#f6f5f1;--card:#fff;--red:#8a2b20;}
+*{box-sizing:border-box}
+body{margin:0;font-family:Assistant,system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:15px}
+a{color:var(--green)}
+header{background:var(--green);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .brand{font-family:'DM Serif Display',Georgia,serif;font-size:20px;color:#fff}
+header .brand b{color:var(--gold)}
+header .sub{font-size:12px;color:#cbdccb;letter-spacing:.5px}
+header .who{margin-left:auto;font-size:13px;color:#cbdccb}
+.tabs{display:flex;gap:4px;padding:0 20px;background:var(--green)}
+.tabs button{background:transparent;border:0;color:#cbdccb;padding:10px 16px;font:600 14px Assistant;cursor:pointer;border-bottom:3px solid transparent}
+.tabs button.on{color:#fff;border-bottom-color:var(--gold)}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 80px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+select,input,textarea{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+select:focus,input:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:-1px}
+.btn{background:var(--green);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:600 14px Assistant;cursor:pointer}
+.btn.alt{background:var(--gold)}
+.btn.ghost{background:#fff;color:var(--green);border:1px solid var(--line)}
+.btn.sm{padding:5px 9px;font-size:13px;border-radius:7px}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.p-hi{background:#e7f0e9;color:var(--green)}.p-mid{background:#f4efe3;color:var(--gold)}.p-lo{background:#eee;color:#666}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.card h3{margin:0;font-family:'DM Serif Display',Georgia,serif;font-size:18px;color:var(--green);font-weight:400}
+.card .vert{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px}
+.card .rev{font-weight:700;color:var(--green)}
+.card .rowline{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px}
+.card .who2{font-weight:600}
+.muted{color:var(--mute)}
+.tel{display:inline-flex;align-items:center;gap:6px;background:#e7f0e9;color:var(--green);border-radius:8px;padding:6px 10px;font-weight:700;text-decoration:none}
+.tel.dnc{background:#f7e7e4;color:var(--red)}
+.mail{text-decoration:none;color:var(--green);font-weight:600;word-break:break-all}
+.note{font-size:12.5px;color:var(--mute);border-left:3px solid var(--line);padding-left:8px}
+.flags{display:flex;gap:6px;flex-wrap:wrap}
+.flag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px}
+.f-ver{background:#e7f0e9;color:var(--green)}.f-extra{background:#f4efe3;color:var(--gold)}.f-warn{background:#f7e7e4;color:var(--red)}
+.statrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px}
+.count{font-size:13px;color:var(--mute)}
+.empty{padding:40px;text-align:center;color:var(--mute)}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--mute)}
+label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--ink)}
+.form{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:820px}
+.form .full{grid-column:1/3}
+.mlist{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.mrow{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.mrow .nm{font-weight:700}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+.toast.show{opacity:1}
+.login{max-width:360px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.hide{display:none!important}
+.kx{font-size:11px;color:var(--mute)}
+.chips{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:2px}
+.chiplbl{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px;margin-right:2px}
+.chip{background:#fff;border:1px solid var(--line);color:var(--green);border-radius:6px;padding:3px 7px;font:600 12px Assistant;cursor:pointer}
+.chip:hover{background:#e7f0e9}
+.hatnote{font-size:12px;color:var(--mute);margin:-6px 0 14px}
+.hatnote b{color:var(--red)}
+@media(max-width:640px){.form{grid-template-columns:1fr}.form .full{grid-column:1}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="brand"><b>TRANSWORLD</b> · Private Sourcing</div>
+    <div class="sub">BUY-BOX ENGINE · OWNER-ONLY</div>
+  </div>
+  <div class="who" id="who"></div>
+</header>
+<div class="tabs" id="tabs">
+  <button data-tab="board" class="on">Board</button>
+  <button data-tab="buybox">Buy Box</button>
+</div>
+
+<div id="loginView" class="hide">
+  <div class="login">
+    <div class="brand" style="color:var(--green);font-family:'DM Serif Display',serif;font-size:22px">Sign in</div>
+    <div class="muted" style="font-size:13px">Use your Deal Board login.</div>
+    <input id="li_email" type="email" placeholder="email" autocomplete="username">
+    <input id="li_pw" type="password" placeholder="password" autocomplete="current-password">
+    <button class="btn" id="li_go">Sign in</button>
+    <div id="li_err" class="f-warn flag hide"></div>
+  </div>
+</div>
+
+<div id="app" class="hide">
+  <!-- BOARD TAB -->
+  <div class="wrap" id="tab-board">
+    <div class="bar">
+      <select id="mandateSel"></select>
+      <select id="vertSel"><option value="">All verticals</option></select>
+      <select id="statusSel">
+        <option value="">All statuses</option>
+        <option value="new">New</option>
+        <option value="claimed">Claimed</option>
+        <option value="contacted">Contacted</option>
+        <option value="interested">Interested</option>
+        <option value="loi">LOI</option>
+        <option value="passed">Passed</option>
+      </select>
+      <input id="q" placeholder="Search company / owner / city" style="min-width:220px">
+      <span class="count" id="count"></span>
+    </div>
+    <div class="hatnote"><b>One hat per firm:</b> Acquisition chips = you're the buyer's agent (PE group, unnamed). Listing chips = you're the seller's agent. Don't send both to the same owner.</div>
+    <div class="grid" id="cards"></div>
+    <div class="empty hide" id="boardEmpty"></div>
+  </div>
+
+  <!-- BUY BOX TAB -->
+  <div class="wrap hide" id="tab-buybox">
+    <h2 style="font-family:'DM Serif Display',serif;color:var(--green);font-weight:400">Your mandates</h2>
+    <div class="mlist" id="mlist"></div>
+    <button class="btn ghost sm" id="newMandate">+ New buy box</button>
+    <div id="editorWrap" class="hide" style="margin-top:20px">
+      <h3 style="font-family:'DM Serif Display',serif;color:var(--green);font-weight:400" id="editorTitle">New buy box</h3>
+      <div class="form" id="editor">
+        <input type="hidden" id="m_id">
+        <label class="fld full">Name<input id="m_name" placeholder="e.g. Pool Roll-Up — Florida"></label>
+        <label class="fld">Side
+          <select id="m_side"><option value="buy">Buy-side (acquire)</option><option value="sell">Sell-side (find sellers)</option></select>
+        </label>
+        <label class="fld">Status
+          <select id="m_status"><option value="active">Active</option><option value="paused">Paused</option><option value="closed">Closed</option></select>
+        </label>
+        <label class="fld full">Buyer / client (private — never shown in outreach)<input id="m_buyer" placeholder="e.g. Acme PE"></label>
+        <label class="fld full">Verticals (comma-separated)<input id="m_verticals" placeholder="Pool construction, Gunite, Fencing"></label>
+        <label class="fld full">States (comma-separated, e.g. FL)<input id="m_states" placeholder="FL"></label>
+        <label class="fld">Revenue min ($)<input id="m_revmin" type="number" placeholder="1000000"></label>
+        <label class="fld">Revenue max ($)<input id="m_revmax" type="number" placeholder="20000000"></label>
+        <label class="fld">EBITDA min ($)<input id="m_ebmin" type="number" placeholder="250000"></label>
+        <label class="fld">EBITDA max ($)<input id="m_ebmax" type="number" placeholder=""></label>
+        <label class="fld full">Keywords (comma-separated)<input id="m_keywords" placeholder="pool, gunite, spa"></label>
+        <label class="fld full">Notes<textarea id="m_notes" rows="3"></textarea></label>
+        <div class="full" style="display:flex;gap:10px">
+          <button class="btn" id="saveMandate">Save buy box</button>
+          <button class="btn ghost" id="cancelMandate">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="../config.js?v=20260923"></script>
+<script>
+const cfg = window.DEAL_BOARD_CONFIG || {};
+const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+let ME=null, MANDATES=[], CURRENT=null, FIRMS=[];
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function telHref(p){if(!p)return null;let d=(''+p).replace(/[^\d+]/g,'');if(!d.startsWith('+')){d=d.replace(/^1?/, '');d='+1'+d;}return d;}
+function firstName(f){const p=(f.principal||'').trim();return p?p.split(/\s+/)[0]:'there';}
+function coName(f){return f.company||'your company';}
+async function copyText(text,msg){try{await navigator.clipboard.writeText(text);toast(msg||'Copied');}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(msg||'Copied');}catch(_){toast('Copy failed — select manually');}ta.remove();}}
+const SIG="\n\n— Jason Curcio\nTransworld Business Advisors of Florida\n561-[your number] · jasoncurcio@tworld.com\n[office postal address]\nReply STOP to opt out.";
+// Standpoint A — equity group acquisition (buyer is NEVER named)
+function emailA(f){const F=firstName(f),C=coName(f);return {
+ intro:{s:"Quick question about "+C,b:"Hi "+F+",\n\nI'll be brief. I represent a private equity group actively acquiring pool companies here in Florida — they already own a platform and are adding strong operators. I'm not selling anything; I'm reaching out because "+C+" is exactly the kind of company they'd want to talk to.\n\nHave you ever thought about what an exit — or a growth partner with real capital behind you — might look like? Every conversation is confidential and there's no cost to explore it.\n\nWorth a confidential 15 minutes?"+SIG},
+ value:{s:"The exit only happens once",b:"Hi "+F+",\n\nCircling back on "+C+". The way this group structures a deal, an owner can take real chips off the table now and still run the business — or step back on a timeline that works for you.\n\nThe hardest part of selling well is starting the conversation early, before you have to. That's all this is — a confidential look at what's possible, no obligation.\n\nCan I grab 15 minutes this week?"+SIG},
+ breakup:{s:"Closing the loop on "+C,b:"Hi "+F+",\n\nI haven't heard back, so I'll close the loop for now. If the timing isn't right, I completely understand.\n\nIf anything changes and you'd like a confidential conversation about "+C+" down the road, I'm one call away.\n\nAll the best,"+SIG}
+};}
+// Standpoint B — Transworld listing (sell-side, Jason as the owner's broker)
+function emailB(f){const F=firstName(f),C=coName(f);return {
+ intro:{s:"What is "+C+" worth today?",b:"Hi "+F+",\n\nI'm a senior broker with Transworld Business Advisors and I specialize in selling pool and outdoor-living companies here in Florida. Values in your space are strong right now and I have buyers actively looking.\n\nIf the right number landed on your desk, is selling something you'd ever consider? I can start you with a confidential, no-cost valuation so you at least know your number.\n\nWorth 15 minutes?"+SIG},
+ value:{s:"A number for "+C+" — no obligation",b:"Hi "+F+",\n\nFollowing up on "+C+". Most owners are off on their value in one direction or the other, and it's an expensive thing to guess on — especially if a buyer calls you first.\n\nLet me get you a real, confidential valuation and run a discreet process if you ever decide to move. Your team and competitors hear nothing until you want them to.\n\nCan I grab 15 minutes this week?"+SIG},
+ breakup:{s:"Last note on "+C,b:"Hi "+F+",\n\nI'll stop reaching out for now. When you're ready to know what "+C+" is worth — or just want a confidential sounding board — I'm here.\n\nAll the best,"+SIG}
+};}
+function callA(f){const F=firstName(f),C=coName(f);return "OPEN: “Hi "+F+", it's Jason Curcio with Transworld Business Advisors in West Palm Beach. Did I catch you at an OK moment — thirty seconds?”\nHOOK: “I represent a private equity group acquiring pool companies in Florida. I'm not selling anything — "+C+" is exactly the kind of company they'd want to talk to.”\nCLOSE: “Worth a confidential fifteen minutes to hear what they're looking for? Later this week or early next?”";}
+function callB(f){const F=firstName(f),C=coName(f);return "OPEN: “Hi "+F+", it's Jason Curcio, senior broker with Transworld in West Palm Beach. Thirty seconds?”\nHOOK: “I sell pool companies here in Florida and values are strong. I wanted to introduce myself before you ever need me.”\nCLOSE: “Can I start you with a no-cost, confidential valuation of "+C+"? Fifteen minutes this week?”";}
+
+// ---------- auth ----------
+async function boot(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(session && session.user){ ME=session.user; onAuthed(); }
+  else { $('loginView').classList.remove('hide'); $('app').classList.add('hide'); }
+}
+$('li_go').onclick = async ()=>{
+  const email=$('li_email').value.trim(), password=$('li_pw').value;
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){ const e=$('li_err'); e.textContent=error.message; e.classList.remove('hide'); return; }
+  ME=data.user; onAuthed();
+};
+function onAuthed(){
+  $('loginView').classList.add('hide'); $('app').classList.remove('hide');
+  $('who').textContent = ME.email;
+  loadMandates();
+}
+
+// ---------- tabs ----------
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const t=b.dataset.tab;
+  $('tab-board').classList.toggle('hide', t!=='board');
+  $('tab-buybox').classList.toggle('hide', t!=='buybox');
+  if(t==='buybox') renderMandateList();
+});
+
+// ---------- mandates ----------
+async function loadMandates(){
+  const {data,error}=await sb.from('mandates').select('*').order('created_at',{ascending:true});
+  if(error){toast('Load error: '+error.message);return;}
+  MANDATES=data||[];
+  const sel=$('mandateSel'); sel.innerHTML='';
+  if(!MANDATES.length){
+    $('boardEmpty').classList.remove('hide');
+    $('boardEmpty').textContent='No mandates yet. Open the Buy Box tab to create one.';
+    $('cards').innerHTML=''; $('count').textContent=''; return;
+  }
+  MANDATES.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name+(m.side==='sell'?' (sell)':'');sel.appendChild(o);});
+  CURRENT=MANDATES[0].id; sel.value=CURRENT;
+  loadFirms();
+}
+$('mandateSel').onchange=e=>{CURRENT=e.target.value;loadFirms();};
+
+async function loadFirms(){
+  const {data,error}=await sb.from('mandate_firms').select('*').eq('mandate_id',CURRENT).order('score',{ascending:false});
+  if(error){toast('Load error: '+error.message);return;}
+  FIRMS=data||[];
+  // vertical filter options
+  const verts=[...new Set(FIRMS.map(f=>f.vertical).filter(Boolean))].sort();
+  const vs=$('vertSel');vs.innerHTML='<option value="">All verticals</option>'+verts.map(v=>`<option>${esc(v)}</option>`).join('');
+  render();
+}
+['vertSel','statusSel','q'].forEach(id=>$(id).addEventListener('input',render));
+
+function pillClass(s){s=+s||0;return s>=75?'p-hi':s>=50?'p-mid':'p-lo';}
+function render(){
+  const v=$('vertSel').value, st=$('statusSel').value, q=$('q').value.trim().toLowerCase();
+  let rows=FIRMS.filter(f=>(!v||f.vertical===v)&&(!st||f.status===st));
+  if(q) rows=rows.filter(f=>[f.company,f.principal,f.city,f.email,f.domain].some(x=>(x||'').toLowerCase().includes(q)));
+  $('boardEmpty').classList.toggle('hide', rows.length>0);
+  if(!rows.length){$('boardEmpty').textContent='No matches.';}
+  $('count').textContent=rows.length+' of '+FIRMS.length+' firms';
+  $('cards').innerHTML=rows.map(cardHtml).join('');
+  bindCards();
+}
+function cardHtml(f){
+  const th=telHref(f.phone);
+  const dnc=f.do_not_call;
+  const tel = f.phone ? (dnc
+      ? `<span class="tel dnc" title="DNC — confirm before dialing">☎ ${esc(f.phone)} · DNC</span>`
+      : `<a class="tel" href="tel:${esc(th)}" title="Kixie click-to-dial">☎ ${esc(f.phone)}</a>`) : '';
+  const mail = f.email ? `<a class="mail" href="mailto:${esc(f.email)}">${esc(f.email)}</a>` : '<span class="muted">no email yet</span>';
+  const flags=[];
+  const nn=(f.next_note||'');
+  if(/verified/i.test(nn)) flags.push('<span class="flag f-ver">email verified</span>');
+  if(/extrapolat/i.test(nn)) flags.push('<span class="flag f-extra">email extrapolated</span>');
+  if(/namesake|unconfirmed/i.test(nn)) flags.push('<span class="flag f-warn">principal unconfirmed</span>');
+  const who = f.principal ? `<span class="who2">${esc(f.principal)}</span>${f.title?` <span class="muted">· ${esc(f.title)}</span>`:''}` : '<span class="muted">owner not yet enriched</span>';
+  const rev = f.revenue_estimate ? `<span class="rev">${esc(f.revenue_estimate.replace(/\s*\(.*\)/,''))}</span>` : '';
+  const opts=['new','claimed','contacted','interested','loi','passed'].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('');
+  return `<div class="card" data-id="${f.id}">
+    <div class="statrow"><span class="pill ${pillClass(f.score)}">${f.score||0}</span><span class="vert">${esc(f.vertical||'')}</span></div>
+    <h3>${esc(f.company)}</h3>
+    <div class="rowline">${who}</div>
+    <div class="rowline">${rev} ${f.city?`<span class="muted">· ${esc(f.city)}, ${esc(f.state||'')}</span>`:''}</div>
+    <div class="rowline">${tel}</div>
+    <div class="rowline">${mail}</div>
+    ${flags.length?`<div class="flags">${flags.join('')}</div>`:''}
+    ${f.why?`<div class="note">${esc(f.why)}</div>`:''}
+    ${nn?`<div class="note">${esc(nn)}</div>`:''}
+    <div class="chips">
+      <span class="chiplbl">✉ Acquisition</span>
+      <button class="chip" data-copy="a-intro">1·intro</button><button class="chip" data-copy="a-value">2·value</button><button class="chip" data-copy="a-breakup">3·breakup</button><button class="chip" data-copy="a-call">☎ opener</button>
+    </div>
+    <div class="chips">
+      <span class="chiplbl">✉ Listing</span>
+      <button class="chip" data-copy="b-intro">1·intro</button><button class="chip" data-copy="b-value">2·value</button><button class="chip" data-copy="b-breakup">3·breakup</button><button class="chip" data-copy="b-call">☎ opener</button>
+    </div>
+    <div class="statrow">
+      <select class="st sm">${opts}</select>
+      <button class="btn ghost sm act">Log note</button>
+    </div>
+  </div>`;
+}
+function bindCards(){
+  document.querySelectorAll('#cards .card').forEach(c=>{
+    const id=c.dataset.id;
+    c.querySelector('.st').onchange=async e=>{
+      const status=e.target.value;
+      const {error}=await sb.from('mandate_firms').update({status}).eq('id',id);
+      if(error){toast('Save failed: '+error.message);return;}
+      await logActivity(id,'status → '+status,'');
+      const f=FIRMS.find(x=>x.id===id); if(f)f.status=status;
+      toast('Status saved');
+    };
+    c.querySelector('.act').onclick=async ()=>{
+      const note=prompt('Log a note / call outcome for this firm:'); if(!note)return;
+      await logActivity(id,'note',note); toast('Logged');
+    };
+    c.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{
+      const f=FIRMS.find(x=>x.id===id); if(!f)return;
+      const k=b.dataset.copy;
+      if(k==='a-call'){copyText(callA(f),'Acquisition call opener copied');return;}
+      if(k==='b-call'){copyText(callB(f),'Listing call opener copied');return;}
+      const set=k[0]==='a'?emailA(f):emailB(f);
+      const m=set[k.slice(2)];
+      copyText('Subject: '+m.s+'\n\n'+m.b,(k[0]==='a'?'Acquisition ':'Listing ')+k.slice(2)+' email copied — paste into Outlook');
+    });
+  });
+}
+async function logActivity(firmId,what,note){
+  const {error}=await sb.from('mandate_activity').insert({mandate_firm_id:firmId,mandate_id:CURRENT,owner_email:ME.email,by_email:ME.email,what,note});
+  if(error)toast('Log failed: '+error.message);
+}
+
+// ---------- buy box editor ----------
+function renderMandateList(){
+  const el=$('mlist');
+  if(!MANDATES.length){el.innerHTML='<div class="muted">No mandates yet.</div>';return;}
+  el.innerHTML=MANDATES.map(m=>`<div class="mrow">
+    <span class="nm">${esc(m.name)}</span>
+    <span class="pill ${m.side==='sell'?'p-mid':'p-hi'}">${m.side}</span>
+    <span class="muted">${(m.verticals||[]).length} verticals · ${(m.states||[]).join(', ')||'any state'}</span>
+    <span class="muted">${m.status}</span>
+    <button class="btn ghost sm ed" data-id="${m.id}" style="margin-left:auto">Edit</button>
+  </div>`).join('');
+  el.querySelectorAll('.ed').forEach(b=>b.onclick=()=>openEditor(MANDATES.find(m=>m.id===b.dataset.id)));
+}
+$('newMandate').onclick=()=>openEditor(null);
+$('cancelMandate').onclick=()=>$('editorWrap').classList.add('hide');
+function openEditor(m){
+  $('editorWrap').classList.remove('hide');
+  $('editorTitle').textContent=m?('Edit: '+m.name):'New buy box';
+  $('m_id').value=m?m.id:'';
+  $('m_name').value=m?m.name:''; $('m_side').value=m?m.side:'buy';
+  $('m_status').value=m?m.status:'active'; $('m_buyer').value=m?(m.buyer_name||''):'';
+  $('m_verticals').value=m?(m.verticals||[]).join(', '):'';
+  $('m_states').value=m?(m.states||[]).join(', '):'';
+  $('m_revmin').value=m?(m.rev_min??''):''; $('m_revmax').value=m?(m.rev_max??''):'';
+  $('m_ebmin').value=m?(m.ebitda_min??''):''; $('m_ebmax').value=m?(m.ebitda_max??''):'';
+  $('m_keywords').value=m?(m.keywords||[]).join(', '):'';
+  $('m_notes').value=m?(m.notes||''):'';
+  $('editorWrap').scrollIntoView({behavior:'smooth'});
+}
+function csv(v){return v.split(',').map(s=>s.trim()).filter(Boolean);}
+function numOrNull(v){return v===''||v==null?null:Number(v);}
+$('saveMandate').onclick=async ()=>{
+  const id=$('m_id').value;
+  const row={
+    owner_email:ME.email, name:$('m_name').value.trim(), side:$('m_side').value, status:$('m_status').value,
+    buyer_name:$('m_buyer').value.trim()||null,
+    verticals:csv($('m_verticals').value), states:csv($('m_states').value.toUpperCase()),
+    rev_min:numOrNull($('m_revmin').value), rev_max:numOrNull($('m_revmax').value),
+    ebitda_min:numOrNull($('m_ebmin').value), ebitda_max:numOrNull($('m_ebmax').value),
+    keywords:csv($('m_keywords').value), notes:$('m_notes').value.trim()||null
+  };
+  if(!row.name){toast('Name is required');return;}
+  let error;
+  if(id){ ({error}=await sb.from('mandates').update(row).eq('id',id)); }
+  else  { ({error}=await sb.from('mandates').insert(row)); }
+  if(error){toast('Save failed: '+error.message);return;}
+  toast('Buy box saved');
+  $('editorWrap').classList.add('hide');
+  await loadMandates(); renderMandateList();
+};
+
+boot();
+</script>
+</body>
+</html>
