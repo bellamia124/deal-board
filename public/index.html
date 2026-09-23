@@ -1114,7 +1114,7 @@ function scoreHtml(){
 
 function render() {
   var adc = $("#admintoggle"); if (adc) adc.style.display = isAdmin() ? "" : "none";
-  var msc = $("#mysourcing"); if (msc) msc.style.display = (me && String(me.email||"").toLowerCase() === "jasoncurcio@tworld.com") ? "" : "none";
+  var _privUsers = ["jasoncurcio@tworld.com","tcurcio@tworld.com"]; var msc = $("#mysourcing"); if (msc) msc.style.display = (me && _privUsers.indexOf(String(me.email||"").toLowerCase()) >= 0) ? "" : "none";
   var scc = $("#scoretoggle"); if (scc) scc.classList.toggle("on", scoreOpen && !adminOpen);
   if (adc) adc.classList.toggle("on", adminOpen);
   var sp = $("#scorepanel"), ap = $("#adminpanel"), lst = $("#list"), tb0 = $("#tierblurb");
