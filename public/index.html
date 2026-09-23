@@ -488,6 +488,12 @@ function subscribe() {
 }
 
 // ---------------------------------------------------------------- writing
+function emailSig(w){
+  var email=(w&&w.owner_email)||(typeof me!=='undefined'&&me&&me.email)||'';
+  var nm=email?(nameOf(email)||email):'Jason Curcio';
+  var cellLine=(String(email).toLowerCase().indexOf('jasoncurcio')>=0)?'561-801-3825 Cell\n':'';
+  return "\n\n"+nm+"\nTransworld Business Advisors of Florida\n"+cellLine+"2121 Vista Parkway\nWest Palm Beach, FL 33411\nReply STOP to opt out.";
+}
 function nameOf(email) {
   var t = team.filter(function (x) { return x.email === email; })[0];
   return t ? t.full_name : (email || "");
@@ -590,8 +596,7 @@ function emailMsgs(f){
   var w=WORK[f.firm_id]||{};
   var sender = w.owner_email ? nameOf(w.owner_email) : (me ? (nameOf(me.email)||me.email) : "Jason Curcio");
   var jason = /jason/i.test(sender);
-  var sig = "\n\n"+sender+"  |  Transworld Business Advisors"+(jason?"  \u00b7  Exclusive Buy-Side":"  \u00b7  Buy-Side Team")+
-            "\n[direct line]  \u00b7  [office postal address]\nReply STOP and you won\u2019t hear from me again.";
+  var sig = emailSig(w);
   var cred1 = jason
     ? "I\u2019m "+sender+" at Transworld. I hold the exclusive buy-side mandate for a publicly traded company that\u2019s quietly acquiring land surveying firms \u2014 I\u2019ve personally closed 12 of their 26 acquisitions, 9 of them survey firms like yours, and I\u2019ve sold more survey firms than any broker in the country over 8 years."
     : "I\u2019m "+sender+" on the Transworld buy-side team. Our team holds the exclusive mandate for a publicly traded company that\u2019s quietly acquiring land surveying firms \u2014 we\u2019ve closed 12 of their 26 acquisitions, 9 of them survey firms like yours, and sold more survey firms than any broker in the country over 8 years.";
@@ -622,8 +627,7 @@ function nurtureMsg(f){
   var jason = /jason/i.test(sender);
   var link = "https://servicecompanyexits.com/value/?f=" + encodeURIComponent(f.firm_id||"");
   var anchor = "Get a confidential value range for "+co;
-  var sigPlain = "\n\n"+sender+"  |  Transworld Business Advisors"+(jason?"  \u00b7  Exclusive Buy-Side":"  \u00b7  Buy-Side Team")+
-            "\n[direct line]  \u00b7  [office postal address]\nReply STOP and you won\u2019t hear from me again.";
+  var sigPlain = emailSig(w);
   var intro = fn+" \u2014 I\u2019ll make this easy.\n\nIf a call feels like too much before you know whether it\u2019s even worth it, here\u2019s the shortcut: a quick tool that gives you a rough value range for "+co+" in about 30 seconds. No obligation, nothing shared, and no one calls unless you ask.";
   var outro = "If the range is interesting, we talk. If it\u2019s not, you\u2019re out 30 seconds. Either way you\u2019ll know where you stand.";
   var body = intro+"\n\n"+anchor+": "+link+"\n\n"+outro+sigPlain;
@@ -643,8 +647,7 @@ function routerMsg(f){
   var w=WORK[f.firm_id]||{};
   var sender = w.owner_email ? nameOf(w.owner_email) : (me ? (nameOf(me.email)||me.email) : "Jason Curcio");
   var jason = /jason/i.test(sender);
-  var sig = "\n\n"+sender+"  |  Transworld Business Advisors"+(jason?"  \u00b7  Exclusive Buy-Side":"  \u00b7  Buy-Side Team")+
-            "\n[direct line]  \u00b7  [office postal address]\nReply STOP and you won\u2019t hear from me again.";
+  var sig = emailSig(w);
   return { n:"B", label:"router", subj:"Who handles ownership questions at "+co+"?",
     body:fn+" \u2014 you\u2019re probably not the right person for this, and that\u2019s fine.\n\nI represent a buyer active with survey and engineering firms in "+st+". I just need to reach whoever handles ownership decisions at "+co+".\n\nPoint me their way and I\u2019ll leave you out of it entirely."+sig };
 }
