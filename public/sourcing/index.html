@@ -118,6 +118,7 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
       <select id="subSel"><option value="">All subcategories</option></select>
       <select id="statusSel">
         <option value="">All statuses</option>
+        <option value="dropped">Dropped / hidden</option>
         <option value="new">New</option>
         <option value="claimed">Claimed</option>
         <option value="contacted">Contacted</option>
@@ -423,7 +424,7 @@ function render(){
     if(sub){const s=sub.toLowerCase();return fv.includes(s)||s.split(/[^a-z0-9]+/).some(w=>w.length>=4&&fv.includes(w));}
     if(cat){const c=catList().find(x=>x.n===cat);if(!c)return true;const terms=new Set();[c.n].concat(c.s).forEach(t=>t.toLowerCase().split(/[^a-z0-9]+/).forEach(w=>{if(w.length>=4)terms.add(w);}));return [...terms].some(t=>fv.includes(t));}
     return true;};
-  let rows=FIRMS.filter(f=>vertMatch(f)&&(!st||f.status===st)&&(!stf||f.state===stf)
+  let rows=FIRMS.filter(f=>vertMatch(f)&&(st==='dropped'?f.status==='dropped':f.status!=='dropped')&&(!st||f.status===st)&&(!stf||f.state===stf)
     &&(!rmin||revNum(f)>=rmin)&&(!smin||sdeNum(f)>=smin)&&(!emin||(+f.staff||0)>=emin));
   if(q) rows=rows.filter(f=>[f.company,f.principal,f.city,f.email,f.domain].some(x=>(x||'').toLowerCase().includes(q)));
   $('boardEmpty').classList.toggle('hide', rows.length>0);
@@ -463,7 +464,7 @@ function cardHtml(f,expanded){
   if(/namesake|unconfirmed/i.test(nn)) flags.push('<span class="flag f-warn">principal unconfirmed</span>');
   const who = f.principal ? `<span class="who2">${esc(f.principal)}</span>${f.title?` <span class="muted">· ${esc(f.title)}</span>`:''}` : '<span class="muted">owner not yet enriched</span>';
   const rev = f.revenue_estimate ? `<span class="rev">${esc(f.revenue_estimate.replace(/\s*\(.*\)/,''))}</span>` : '';
-  const opts=['new','claimed','contacted','interested','meeting','loi','closed','passed'].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('');
+  const opts=['new','claimed','contacted','interested','meeting','loi','closed','passed','dropped'].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('');
   const badges=(f.do_not_call?'<span class="flag f-warn">🚫 DNC</span>':'')+(isDNE(f)?'<span class="flag f-warn">🚫 No email</span>':'')+(bounced?'<span class="flag f-warn">⚠ Bounced</span>':'');
   return `<div class="card" data-id="${f.id}">
     <div class="statrow"><span class="pill ${pillClass(f.score)}">${f.score||0}</span><span class="vert">${esc(f.vertical||'')}</span>${badges}</div>
