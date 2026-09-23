@@ -393,15 +393,20 @@ async function loadFirms(){
 }
 ['statusSel','stateSel','revSel','sdeSel','empSel','q'].forEach(id=>$(id).addEventListener('input',render));
 $('clearFilters').onclick=()=>{['catSel','subSel','statusSel','stateSel','revSel','sdeSel','empSel'].forEach(id=>$(id).value='');$('subSel').innerHTML='<option value="">All subcategories</option>';$('q').value='';render();};
+// Shared sourcing call — used by the Pull button AND auto-source on create.
+async function runSource(mid){
+  const {data,error}=await sb.functions.invoke('source-mandate',{body:{mandate_id:mid,enrich:'waterfall'}});
+  if(error) throw error;
+  const r=(data&&data.results&&data.results[0])||data||{};
+  if(r&&r.error) throw new Error(r.error);
+  return r;
+}
 $('pullLeads').onclick=async()=>{
   if(!CURRENT){toast('Pick a buy box first');return;}
   const b=$('pullLeads'); const old=b.textContent; b.disabled=true; b.textContent='Sourcing…';
   try{
-    const {data,error}=await sb.functions.invoke('source-mandate',{body:{mandate_id:CURRENT,enrich:'waterfall'}});
-    if(error) throw error;
-    const r=(data&&data.results&&data.results[0])||data||{};
-    if(r&&r.error) toast('Source error: '+r.error);
-    else toast('Loaded '+(r.loaded||0)+' new · enriched '+(r.enriched||0)+' · '+(r.dupes||0)+' dupes skipped');
+    const r=await runSource(CURRENT);
+    toast('Loaded '+(r.loaded||0)+' new · enriched '+(r.enriched||0)+' · '+(r.dupes||0)+' dupes skipped');
     await loadFirms();
   }catch(e){ toast('Pull failed: '+(e&&e.message?e.message:e)); }
   finally{ b.disabled=false; b.textContent=old; }
@@ -600,13 +605,29 @@ $('saveMandate').onclick=async ()=>{
     keywords:csv($('m_keywords').value), notes:$('m_notes').value.trim()||null
   };
   if(!row.name){toast('Name is required');return;}
-  let error;
+  let error, savedId=id; const isNew=!id;
   if(id){ ({error}=await sb.from('mandates').update(row).eq('id',id)); }
-  else  { ({error}=await sb.from('mandates').insert(row)); }
+  else  {
+    const r=await sb.from('mandates').insert(row).select('id').single();
+    error=r.error; if(r.data&&r.data.id) savedId=r.data.id;
+  }
   if(error){toast('Save failed: '+error.message);return;}
-  toast('Buy box saved');
   $('editorWrap').classList.add('hide');
   await loadMandates(); renderMandateList();
+  // Auto-source: fire the engine the instant a box is created, or when saving a box that still has no leads.
+  let firmCount=0;
+  try{ const c=await sb.from('mandate_firms').select('id',{count:'exact',head:true}).eq('mandate_id',savedId); firmCount=c.count||0; }catch(e){}
+  if(savedId && (isNew || firmCount===0)){
+    toast('Buy box saved — sourcing leads now…');
+    try{
+      const r=await runSource(savedId);
+      toast('Sourced '+(r.loaded||0)+' new lead'+((r.loaded||0)===1?'':'s')+((r.loaded||0)?'':' — no matches yet'));
+      if(String(CURRENT)===String(savedId)) await loadFirms();
+      await loadMandates(); renderMandateList();
+    }catch(e){ toast('Saved, but auto-source failed: '+(e&&e.message?e.message:e)); }
+  } else {
+    toast('Buy box saved');
+  }
 };
 
 boot();
