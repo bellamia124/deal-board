@@ -153,6 +153,7 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
       </select>
       <input id="q" placeholder="Search company / owner / city" style="min-width:200px">
       <button class="btn ghost sm" id="clearFilters">Clear</button>
+      <button class="btn sm" id="pullLeads" title="Source fresh leads for this buy box via Apollo (Claude search)">🔎 Pull new leads</button>
       <span class="count" id="count"></span>
     </div>
     <div class="hatnote"><b>One hat per firm:</b> Acquisition chips = you're the buyer's agent (PE group, unnamed). Listing chips = you're the seller's agent. Don't send both to the same owner.</div>
@@ -375,6 +376,19 @@ async function loadFirms(){
 }
 ['statusSel','stateSel','revSel','sdeSel','empSel','q'].forEach(id=>$(id).addEventListener('input',render));
 $('clearFilters').onclick=()=>{['catSel','subSel','statusSel','stateSel','revSel','sdeSel','empSel'].forEach(id=>$(id).value='');$('subSel').innerHTML='<option value="">All subcategories</option>';$('q').value='';render();};
+$('pullLeads').onclick=async()=>{
+  if(!CURRENT){toast('Pick a buy box first');return;}
+  const b=$('pullLeads'); const old=b.textContent; b.disabled=true; b.textContent='Sourcing…';
+  try{
+    const {data,error}=await sb.functions.invoke('source-mandate',{body:{mandate_id:CURRENT,enrich:'waterfall'}});
+    if(error) throw error;
+    const r=(data&&data.results&&data.results[0])||data||{};
+    if(r&&r.error) toast('Source error: '+r.error);
+    else toast('Loaded '+(r.loaded||0)+' new · enriched '+(r.enriched||0)+' · '+(r.dupes||0)+' dupes skipped');
+    await loadFirms();
+  }catch(e){ toast('Pull failed: '+(e&&e.message?e.message:e)); }
+  finally{ b.disabled=false; b.textContent=old; }
+};
 
 function pillClass(s){s=+s||0;return s>=75?'p-hi':s>=50?'p-mid':'p-lo';}
 function parseMoney(s){if(!s)return -1;const m=String(s).match(/\$?\s*([\d,.]+)\s*([KMB])?/i);if(!m)return -1;let n=parseFloat(m[1].replace(/,/g,''));if(isNaN(n))return -1;const u=(m[2]||'').toUpperCase();if(u==='K')n*=1e3;else if(u==='M')n*=1e6;else if(u==='B')n*=1e9;return n;}
