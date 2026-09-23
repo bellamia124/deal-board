@@ -107,7 +107,8 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
   <div class="wrap" id="tab-board">
     <div class="bar">
       <select id="mandateSel"></select>
-      <select id="vertSel"><option value="">All verticals</option></select>
+      <select id="catSel"><option value="">All industries</option></select>
+      <select id="subSel"><option value="">All subcategories</option></select>
       <select id="statusSel">
         <option value="">All statuses</option>
         <option value="new">New</option>
@@ -169,7 +170,14 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
           <select id="m_status"><option value="active">Active</option><option value="paused">Paused</option><option value="closed">Closed</option></select>
         </label>
         <label class="fld full">Buyer / client (private — never shown in outreach)<input id="m_buyer" placeholder="e.g. Acme PE"></label>
-        <label class="fld full">Verticals (comma-separated)<input id="m_verticals" placeholder="Pool construction, Gunite, Fencing"></label>
+        <label class="fld full">Add from taxonomy (BBF industries + subcategories)
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+            <select id="bx_cat" style="flex:2;min-width:150px"><option value="">Industry…</option></select>
+            <select id="bx_sub" style="flex:2;min-width:150px"><option value="">Subcategory…</option></select>
+            <button type="button" class="btn ghost sm" id="bx_add">+ Add</button>
+          </div>
+        </label>
+        <label class="fld full">Verticals (comma-separated — used to source &amp; filter)<input id="m_verticals" placeholder="Pool construction, Gunite, Fencing"></label>
         <label class="fld full">States (comma-separated, e.g. FL)<input id="m_states" placeholder="FL"></label>
         <label class="fld">Revenue min ($)<input id="m_revmin" type="number" placeholder="1000000"></label>
         <label class="fld">Revenue max ($)<input id="m_revmax" type="number" placeholder="20000000"></label>
@@ -190,6 +198,7 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="../config.js?v=20260923"></script>
+<script src="categories.js?v=20260923b"></script>
 <script>
 const cfg = window.DEAL_BOARD_CONFIG || {};
 const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
@@ -232,7 +241,21 @@ $('li_go').onclick = async ()=>{
 function onAuthed(){
   $('loginView').classList.add('hide'); $('app').classList.remove('hide');
   $('who').textContent = ME.email;
+  populateCats();
   loadMandates();
+}
+// ---------- category taxonomy (category -> subcategory pickers) ----------
+function catList(){return window.SOURCING_CATS||[];}
+function subsFor(name){const c=catList().find(x=>x.n===name);return c?c.s:[];}
+function fillCats(sel,allLabel){sel.innerHTML='<option value="">'+allLabel+'</option>'+catList().map(c=>`<option value="${esc(c.n)}">${esc(c.n)}</option>`).join('');}
+function fillSubs(sel,name,allLabel){const subs=subsFor(name);sel.innerHTML='<option value="">'+allLabel+'</option>'+subs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');}
+function populateCats(){
+  fillCats($('catSel'),'All industries'); $('subSel').innerHTML='<option value="">All subcategories</option>';
+  fillCats($('bx_cat'),'Industry…');
+  $('catSel').addEventListener('change',()=>{fillSubs($('subSel'),$('catSel').value,'All subcategories');render();});
+  $('subSel').addEventListener('change',render);
+  $('bx_cat').addEventListener('change',()=>fillSubs($('bx_sub'),$('bx_cat').value,'Subcategory…'));
+  $('bx_add').addEventListener('click',()=>{const term=$('bx_sub').value||$('bx_cat').value;if(!term)return;const cur=csv($('m_verticals').value);if(!cur.some(x=>x.toLowerCase()===term.toLowerCase())){cur.push(term);$('m_verticals').value=cur.join(', ');toast('Added: '+term);}});
 }
 
 // ---------- tabs ----------
@@ -270,24 +293,26 @@ async function loadFirms(){
   ACT={};
   const {data:acts}=await sb.from('mandate_activity').select('*').eq('mandate_id',CURRENT).order('at',{ascending:false});
   (acts||[]).forEach(a=>{(ACT[a.mandate_firm_id]=ACT[a.mandate_firm_id]||[]).push(a);});
-  // vertical + state filter options
-  const verts=[...new Set(FIRMS.map(f=>f.vertical).filter(Boolean))].sort();
-  $('vertSel').innerHTML='<option value="">All verticals</option>'+verts.map(v=>`<option>${esc(v)}</option>`).join('');
+  // state filter options (industry/subcategory come from the static taxonomy)
   const states=[...new Set(FIRMS.map(f=>f.state).filter(Boolean))].sort();
   $('stateSel').innerHTML='<option value="">All states</option>'+states.map(s=>`<option>${esc(s)}</option>`).join('');
   render();
 }
-['vertSel','statusSel','stateSel','revSel','sdeSel','empSel','q'].forEach(id=>$(id).addEventListener('input',render));
-$('clearFilters').onclick=()=>{['vertSel','statusSel','stateSel','revSel','sdeSel','empSel'].forEach(id=>$(id).value='');$('q').value='';render();};
+['statusSel','stateSel','revSel','sdeSel','empSel','q'].forEach(id=>$(id).addEventListener('input',render));
+$('clearFilters').onclick=()=>{['catSel','subSel','statusSel','stateSel','revSel','sdeSel','empSel'].forEach(id=>$(id).value='');$('subSel').innerHTML='<option value="">All subcategories</option>';$('q').value='';render();};
 
 function pillClass(s){s=+s||0;return s>=75?'p-hi':s>=50?'p-mid':'p-lo';}
 function parseMoney(s){if(!s)return -1;const m=String(s).match(/\$?\s*([\d,.]+)\s*([KMB])?/i);if(!m)return -1;let n=parseFloat(m[1].replace(/,/g,''));if(isNaN(n))return -1;const u=(m[2]||'').toUpperCase();if(u==='K')n*=1e3;else if(u==='M')n*=1e6;else if(u==='B')n*=1e9;return n;}
 function revNum(f){return parseMoney(f.revenue_estimate);}
 function sdeNum(f){return parseMoney(f.ebitda_estimate);}
 function render(){
-  const v=$('vertSel').value, st=$('statusSel').value, q=$('q').value.trim().toLowerCase();
+  const cat=$('catSel').value, sub=$('subSel').value, st=$('statusSel').value, q=$('q').value.trim().toLowerCase();
   const stf=$('stateSel').value, rmin=+($('revSel').value||0), smin=+($('sdeSel').value||0), emin=+($('empSel').value||0);
-  let rows=FIRMS.filter(f=>(!v||f.vertical===v)&&(!st||f.status===st)&&(!stf||f.state===stf)
+  const vertMatch=f=>{const fv=(f.vertical||'').toLowerCase();
+    if(sub){const s=sub.toLowerCase();return fv.includes(s)||s.split(/[^a-z0-9]+/).some(w=>w.length>=4&&fv.includes(w));}
+    if(cat){const c=catList().find(x=>x.n===cat);if(!c)return true;const terms=new Set();[c.n].concat(c.s).forEach(t=>t.toLowerCase().split(/[^a-z0-9]+/).forEach(w=>{if(w.length>=4)terms.add(w);}));return [...terms].some(t=>fv.includes(t));}
+    return true;};
+  let rows=FIRMS.filter(f=>vertMatch(f)&&(!st||f.status===st)&&(!stf||f.state===stf)
     &&(!rmin||revNum(f)>=rmin)&&(!smin||sdeNum(f)>=smin)&&(!emin||(+f.staff||0)>=emin));
   if(q) rows=rows.filter(f=>[f.company,f.principal,f.city,f.email,f.domain].some(x=>(x||'').toLowerCase().includes(q)));
   $('boardEmpty').classList.toggle('hide', rows.length>0);
