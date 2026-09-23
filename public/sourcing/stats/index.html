@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sourcing Stats — Transworld</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--green:#00461C;--gold:#9D7D4F;--ink:#1f2420;--mute:#5c6560;--line:#e4e0d6;--bg:#f6f5f1;--card:#fff;--red:#8a2b20;--blue:#26506b}
+*{box-sizing:border-box}
+body{margin:0;font-family:Assistant,system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:15px}
+a{color:var(--green)}
+header{background:var(--green);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .brand{font-family:'DM Serif Display',Georgia,serif;font-size:20px;color:#fff}
+header .brand b{color:var(--gold)}
+header .sub{font-size:12px;color:#cbdccb;letter-spacing:.5px}
+header .who{margin-left:auto;font-size:13px;color:#cbdccb}
+header a.back{color:#cbdccb;font-size:13px;text-decoration:none;border:1px solid #2f6b45;border-radius:8px;padding:5px 10px}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 20px 90px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+select{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+h2{font-family:'DM Serif Display',Georgia,serif;font-weight:400;color:var(--green);font-size:20px;margin:26px 0 12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.tile .n{font-size:30px;font-weight:700;color:var(--green);line-height:1.05}
+.tile .l{font-size:12.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.tile.warn .n{color:var(--red)}
+.tile.mut .n{color:var(--blue)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.funnel{display:flex;flex-direction:column;gap:8px}
+.frow{display:flex;align-items:center;gap:12px}
+.frow .lab{width:130px;font-weight:600;font-size:13.5px;flex-shrink:0}
+.frow .track{flex:1;background:#eee;border-radius:8px;overflow:hidden;height:26px;position:relative}
+.frow .fill{height:100%;background:var(--green);border-radius:8px;min-width:2px;transition:width .4s}
+.frow .val{width:120px;text-align:right;font-size:13px;color:var(--mute);flex-shrink:0}
+.frow .val b{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);font-weight:700}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.trend{display:flex;align-items:flex-end;gap:3px;height:110px;padding-top:8px}
+.trend .b{flex:1;background:var(--gold);border-radius:3px 3px 0 0;min-height:2px;position:relative}
+.trend .b:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:11px;padding:3px 6px;border-radius:5px;white-space:nowrap;margin-bottom:3px}
+.trendx{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:6px}
+.feed{display:flex;flex-direction:column;gap:0}
+.fitem{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.fitem .when{color:var(--mute);width:110px;flex-shrink:0;font-size:12.5px}
+.fitem .co{font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:780px){.grid2{grid-template-columns:1fr}.frow .lab{width:92px}.frow .val{width:92px}}
+.muted{color:var(--mute)}
+.empty{padding:48px;text-align:center;color:var(--mute)}
+.login{max-width:360px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.login h3{margin:0;font-family:'DM Serif Display',serif;color:var(--green);font-weight:400}
+.login input{font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px}
+.login button{background:var(--green);color:#fff;border:0;border-radius:8px;padding:11px;font:600 15px Assistant;cursor:pointer}
+.err{color:var(--red);font-size:13px}
+.hide{display:none!important}
+.updated{font-size:12px;color:var(--mute);margin-left:auto}
+.legend{font-size:12px;color:var(--mute);margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Transworld <b>·</b> Sourcing Stats</div>
+  <div class="sub">PRIVATE · YOUR PIPELINE ONLY</div>
+  <a class="back" href="../">← Back to sourcing</a>
+  <div class="who" id="who"></div>
+</header>
+
+<div class="login hide" id="loginView">
+  <h3>Sign in</h3>
+  <input id="li_email" type="email" placeholder="you@tworld.com" autocomplete="username">
+  <input id="li_pw" type="password" placeholder="Password" autocomplete="current-password">
+  <button id="li_go">Sign in</button>
+  <div class="err hide" id="li_err"></div>
+</div>
+
+<div class="wrap hide" id="app">
+  <div class="bar">
+    <select id="mandateSel"><option value="">All my buy boxes</option></select>
+    <span class="updated" id="updated"></span>
+  </div>
+
+  <div id="content"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="../../config.js?v=20260923"></script>
+<script>
+const cfg = window.DEAL_BOARD_CONFIG || {};
+const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+const $=id=>document.getElementById(id);
+let ME=null, MANDATES=[], FIRMS=[], ACT=[];
+
+const STATUS_ORDER=['new','claimed','contacted','interested','meeting','loi','closed','passed'];
+const STATUS_LABEL={new:'New',claimed:'Claimed',contacted:'Contacted',interested:'Interested',meeting:'Meeting',loi:'LOI',closed:'Closed',passed:'Passed'};
+// funnel = "reached at least this stage" (working pipeline, passed excluded)
+const RANK={new:0,claimed:1,contacted:2,interested:3,meeting:4,loi:5,closed:6};
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function boot(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(session && session.user){ ME=session.user; onAuthed(); }
+  else { $('loginView').classList.remove('hide'); $('app').classList.add('hide'); }
+}
+$('li_go').onclick = async ()=>{
+  const email=$('li_email').value.trim(), password=$('li_pw').value;
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){ const e=$('li_err'); e.textContent=error.message; e.classList.remove('hide'); return; }
+  ME=data.user; onAuthed();
+};
+async function onAuthed(){
+  $('loginView').classList.add('hide'); $('app').classList.remove('hide');
+  $('who').textContent = ME.email;
+  await loadAll();
+}
+
+async function loadAll(){
+  // RLS returns ONLY this signed-in user's rows on every table below.
+  const [m,f,a] = await Promise.all([
+    sb.from('mandates').select('id,name,side,status,verticals,states').order('created_at'),
+    sb.from('mandate_firms').select('id,mandate_id,company,vertical,status,score,email,phone,phone_type,do_not_call,do_not_email,revenue_estimate,created_at'),
+    sb.from('mandate_activity').select('mandate_id,mandate_firm_id,what,note,at').order('at',{ascending:false}).limit(3000)
+  ]);
+  MANDATES = m.data||[]; FIRMS = f.data||[]; ACT = a.data||[];
+  const sel=$('mandateSel'); sel.innerHTML='<option value="">All my buy boxes</option>';
+  MANDATES.forEach(md=>{ const o=document.createElement('option'); o.value=md.id; o.textContent=md.name+(md.side==='sell'?' (sell-side)':''); sel.appendChild(o); });
+  sel.onchange=render;
+  $('updated').textContent='Updated '+new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  render();
+}
+
+function classify(what){
+  const w=(what||'').toLowerCase();
+  if(/bounc/.test(w)) return 'bounce';
+  if(/do-?not-?email|do not email/.test(w)) return 'flag';
+  if(/do-?not-?call|do not call/.test(w)) return 'flag';
+  if(/email/.test(w)) return 'email';
+  if(/left\s*v|voicemail|\bvm\b/.test(w)) return 'vm';
+  if(/no answer|no-answer/.test(w)) return 'noans';
+  if(/call/.test(w)) return 'call';
+  if(/status/.test(w)) return 'status';
+  if(w==='note'||/^note/.test(w)) return 'note';
+  return 'other';
+}
+
+function render(){
+  const mid=$('mandateSel').value;
+  const firms = mid ? FIRMS.filter(f=>f.mandate_id===mid) : FIRMS;
+  const act   = mid ? ACT.filter(a=>a.mandate_id===mid) : ACT;
+  const C=$('content');
+  if(!firms.length && !MANDATES.length){ C.innerHTML='<div class="empty">No buy boxes yet. Create one in the sourcing app and leads will show up here.</div>'; return; }
+
+  // ---- headline tiles ----
+  const total=firms.length;
+  const withEmail=firms.filter(f=>f.email && !f.do_not_email).length;
+  const withPhone=firms.filter(f=>f.phone && !f.do_not_call).length;
+  const dnc=firms.filter(f=>f.do_not_call).length;
+  const dne=firms.filter(f=>f.do_not_email).length;
+  const rank=f=>RANK[f.status]!=null?RANK[f.status]:0;
+  const passed=firms.filter(f=>f.status==='passed').length;
+  const contactedPlus=firms.filter(f=>f.status!=='passed'&&rank(f)>=2).length;
+  const interestedPlus=firms.filter(f=>f.status!=='passed'&&rank(f)>=3).length;
+  const meetings=firms.filter(f=>rank(f)>=4&&f.status!=='passed').length;
+  const lois=firms.filter(f=>rank(f)>=5&&f.status!=='passed').length;
+  const closed=firms.filter(f=>f.status==='closed').length;
+
+  // outreach from activity
+  const oc={email:0,call:0,vm:0,noans:0,bounce:0,note:0};
+  act.forEach(a=>{const k=classify(a.what); if(oc[k]!=null)oc[k]++;});
+  const touched=new Set(act.filter(a=>['email','call','vm','noans'].includes(classify(a.what))).map(a=>a.mandate_firm_id)).size;
+
+  let html='';
+  html+='<h2>Pipeline at a glance</h2><div class="tiles">'
+    +tile(total,'Leads sourced')
+    +tile(touched,'Firms touched')
+    +tile(contactedPlus,'Contacted+')
+    +tile(interestedPlus,'Interested+')
+    +tile(meetings,'Meetings')
+    +tile(lois,'LOIs')
+    +tile(closed,'Closed','')
+    +tile(passed,'Passed','mut')
+    +'</div>';
+
+  // ---- funnel ----
+  const stages=[['Sourced',total],['Contacted',contactedPlus],['Interested',interestedPlus],['Meeting',meetings],['LOI',lois],['Closed',closed]];
+  html+='<h2>Working funnel</h2><div class="panel funnel">';
+  stages.forEach(([lab,n])=>{
+    const pct=total?Math.round(n/total*100):0;
+    const prev = stages[stages.findIndex(s=>s[0]===lab)-1];
+    const conv = prev && prev[1] ? Math.round(n/prev[1]*100) : null;
+    html+='<div class="frow"><div class="lab">'+lab+'</div>'
+      +'<div class="track"><div class="fill" style="width:'+pct+'%"></div></div>'
+      +'<div class="val"><b>'+n+'</b> · '+pct+'%'+(conv!=null&&lab!=='Sourced'?' <span class="muted">('+conv+'→)</span>':'')+'</div></div>';
+  });
+  html+='</div><div class="legend">“→” = conversion from the stage above. Passed leads are excluded from the funnel.</div>';
+
+  // ---- outreach + contactability ----
+  html+='<h2>Outreach &amp; data</h2><div class="grid2">';
+  html+='<div class="panel"><table><tr><th>Outreach logged</th><th class="num">Count</th></tr>'
+    +row('Emails sent',oc.email)+row('Calls made',oc.call)+row('Voicemails left',oc.vm)
+    +row('No answers',oc.noans)+row('Bounced',oc.bounce,oc.bounce>0)+row('Notes',oc.note)
+    +'</table></div>';
+  html+='<div class="panel"><table><tr><th>Reachability</th><th class="num">Count</th></tr>'
+    +row('Have email (mailable)',withEmail)+row('Have phone (dialable)',withPhone)
+    +row('Do-not-call',dnc,dnc>0)+row('Do-not-email',dne,dne>0)
+    +'</table></div>';
+  html+='</div>';
+
+  // ---- 30-day activity trend ----
+  const days=30, today=new Date(); today.setHours(0,0,0,0);
+  const buckets=Array.from({length:days},()=>0);
+  act.forEach(a=>{if(!a.at)return;const d=new Date(a.at);d.setHours(0,0,0,0);const diff=Math.round((today-d)/86400000);if(diff>=0&&diff<days)buckets[days-1-diff]++;});
+  const mx=Math.max(1,...buckets);
+  html+='<h2>Activity — last 30 days</h2><div class="panel"><div class="trend">';
+  buckets.forEach((v,i)=>{const dd=new Date(today.getTime()-(days-1-i)*86400000);const lbl=(dd.getMonth()+1)+'/'+dd.getDate();html+='<div class="b" style="height:'+Math.round(v/mx*100)+'%" data-t="'+lbl+': '+v+'"></div>';});
+  html+='</div><div class="trendx"><span>'+new Date(today.getTime()-29*86400000).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span><span>Today</span></div></div>';
+
+  // ---- per-buy-box (only in "all" view) ----
+  if(!mid && MANDATES.length){
+    html+='<h2>By buy box</h2><div class="panel"><table><tr><th>Buy box</th><th class="num">Leads</th><th class="num">Contacted+</th><th class="num">Interested+</th><th class="num">Meetings</th><th class="num">Closed</th></tr>';
+    MANDATES.forEach(md=>{
+      const ff=FIRMS.filter(f=>f.mandate_id===md.id);
+      const c=ff.filter(f=>f.status!=='passed'&&(RANK[f.status]||0)>=2).length;
+      const in_=ff.filter(f=>f.status!=='passed'&&(RANK[f.status]||0)>=3).length;
+      const me=ff.filter(f=>f.status!=='passed'&&(RANK[f.status]||0)>=4).length;
+      const cl=ff.filter(f=>f.status==='closed').length;
+      html+='<tr><td>'+esc(md.name)+(md.side==='sell'?' <span class="muted">(sell)</span>':'')+'</td><td class="num">'+ff.length+'</td><td class="num">'+c+'</td><td class="num">'+in_+'</td><td class="num">'+me+'</td><td class="num">'+cl+'</td></tr>';
+    });
+    html+='</table></div>';
+  }
+
+  // ---- recent activity feed ----
+  const fmap={}; FIRMS.forEach(f=>fmap[f.id]=f.company);
+  html+='<h2>Recent activity</h2><div class="panel feed">';
+  const recent=act.slice(0,20);
+  if(!recent.length) html+='<div class="muted">No activity logged yet.</div>';
+  recent.forEach(a=>{
+    const when=a.at?new Date(a.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+    html+='<div class="fitem"><div class="when">'+when+'</div><div><span class="co">'+esc(fmap[a.mandate_firm_id]||'—')+'</span> · '+esc(a.what||'')+(a.note?' <span class="muted">— '+esc(a.note)+'</span>':'')+'</div></div>';
+  });
+  html+='</div>';
+
+  C.innerHTML=html;
+}
+function tile(n,l,cls){return '<div class="tile '+(cls||'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
+function row(l,n,warn){return '<tr><td>'+l+'</td><td class="num"'+(warn?' style="color:var(--red);font-weight:700"':'')+'>'+n+'</td></tr>';}
+
+boot();
+</script>
+</body>
+</html>
