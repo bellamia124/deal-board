@@ -298,7 +298,11 @@ function indPhrase(f){
   return fv?fv+' companies':'companies in your industry';
 }
 async function copyText(text,msg){try{await navigator.clipboard.writeText(text);toast(msg||'Copied');}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(msg||'Copied');}catch(_){toast('Copy failed — select manually');}ta.remove();}}
-const SIG="\n\n— Jason Curcio\nTransworld Business Advisors of Florida\n561-801-3825 Cell\n2121 Vista Parkway\nWest Palm Beach, FL 33411\nReply STOP to opt out.";
+let SIG="\n\n— Jason Curcio\nTransworld Business Advisors of Florida\n561-801-3825 Cell\n2121 Vista Parkway\nWest Palm Beach, FL 33411\nReply STOP to opt out.";
+function sigBlock(email){var e=String(email||'').toLowerCase();
+ if(e.indexOf('tcurcio')>=0) return "\n\n— Tim Curcio\nBusiness Broker & Advisor\n917-592-4993 Cell\nDRE #02446578\nTransworld Business Advisors of LA Metro\n680 E Colorado Blvd, Ste 180\nPasadena, CA 91101\nReply STOP to opt out.";
+ return "\n\n— Jason Curcio\nTransworld Business Advisors of Florida\n561-801-3825 Cell\n2121 Vista Parkway\nWest Palm Beach, FL 33411\nReply STOP to opt out.";
+}
 // Standpoint A — equity group acquisition (buyer is NEVER named)
 function emailA(f){const F=firstName(f),C=coName(f);return {
  intro:{s:"Quick question about "+C,b:"Hi "+F+",\n\nI'll be brief. I represent a private equity group actively acquiring "+indPhrase(f)+" here in Florida — they already own a platform and are adding strong operators. I'm not selling anything; I'm reaching out because "+C+" is exactly the kind of company they'd want to talk to.\n\nHave you ever thought about what an exit — or a growth partner with real capital behind you — might look like? Every conversation is confidential and there's no cost to explore it.\n\nWorth a confidential 15 minutes?"+SIG},
@@ -328,7 +332,7 @@ $('li_go').onclick = async ()=>{
 };
 function onAuthed(){
   $('loginView').classList.add('hide'); $('app').classList.remove('hide');
-  $('who').textContent = ME.email;
+  $('who').textContent = ME.email; SIG=sigBlock(ME.email);
   populateCats();
   loadMandates();
 }
