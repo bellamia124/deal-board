@@ -209,7 +209,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 <div class="wrap">
   <header>
     <div class="me">Signed in as <b id="whoami"></b><span id="mykixie" class="mykixie"></span><br>
-      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" id="qlink" href="../valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — your name is baked into the link so a prospect emails the form back to you">📝 Valuation Questionnaire</a></div>
+      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" id="qlink" href="../valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — your name is baked into the link so a prospect emails the form back to you">📝 Valuation Questionnaire</a><a class="guidebtn alt" id="mysourcing" href="sourcing/" target="_blank" rel="noopener" style="display:none" title="Your private buy-box sourcing — owner-only">🔒 My Private Sourcing</a></div>
     <h1>Deal Board</h1>
     <div class="sub">Buy-side mandate · <span id="stamp"></span></div>
   </header>
@@ -1114,6 +1114,7 @@ function scoreHtml(){
 
 function render() {
   var adc = $("#admintoggle"); if (adc) adc.style.display = isAdmin() ? "" : "none";
+  var msc = $("#mysourcing"); if (msc) msc.style.display = (me && String(me.email||"").toLowerCase() === "jasoncurcio@tworld.com") ? "" : "none";
   var scc = $("#scoretoggle"); if (scc) scc.classList.toggle("on", scoreOpen && !adminOpen);
   if (adc) adc.classList.toggle("on", adminOpen);
   var sp = $("#scorepanel"), ap = $("#adminpanel"), lst = $("#list"), tb0 = $("#tierblurb");
