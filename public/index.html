@@ -490,9 +490,11 @@ function subscribe() {
 // ---------------------------------------------------------------- writing
 function emailSig(w){
   var email=(w&&w.owner_email)||(typeof me!=='undefined'&&me&&me.email)||'';
+  var e=String(email).toLowerCase();
+  if(e.indexOf('tcurcio')>=0) return "\n\n— Tim Curcio\nBusiness Broker & Advisor\n917-592-4993 Cell\nDRE #02446578\nTransworld Business Advisors of LA Metro\n680 E Colorado Blvd, Ste 180\nPasadena, CA 91101\nReply STOP to opt out.";
+  if(e.indexOf('jasoncurcio')>=0) return "\n\n— Jason Curcio\nTransworld Business Advisors of Florida\n561-801-3825 Cell\n2121 Vista Parkway\nWest Palm Beach, FL 33411\nReply STOP to opt out.";
   var nm=email?(nameOf(email)||email):'Jason Curcio';
-  var cellLine=(String(email).toLowerCase().indexOf('jasoncurcio')>=0)?'561-801-3825 Cell\n':'';
-  return "\n\n"+nm+"\nTransworld Business Advisors of Florida\n"+cellLine+"2121 Vista Parkway\nWest Palm Beach, FL 33411\nReply STOP to opt out.";
+  return "\n\n— "+nm+"\nTransworld Business Advisors of Florida\n2121 Vista Parkway\nWest Palm Beach, FL 33411\nReply STOP to opt out.";
 }
 function nameOf(email) {
   var t = team.filter(function (x) { return x.email === email; })[0];
