@@ -212,6 +212,12 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" id="qlink" href="../valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — your name is baked into the link so a prospect emails the form back to you">📝 Valuation Questionnaire</a><a class="guidebtn alt" id="mysourcing" href="sourcing/" target="_blank" rel="noopener" style="display:none" title="Your private buy-box sourcing — owner-only">🔒 My Private Sourcing</a></div>
     <h1>Deal Board</h1>
     <div class="sub">Buy-side mandate · <span id="stamp"></span></div>
+    <div class="qdial" style="margin-top:7px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--mute);font-weight:600">Quick dial</span>
+      <input id="dialnum" inputmode="tel" autocomplete="off" placeholder="type or paste any number" style="padding:5px 9px;border:1px solid #ccc;border-radius:6px;font-size:13px;width:210px">
+      <a id="dialgo" class="b callbtn" href="tel:" style="pointer-events:none;opacity:.45" title="Click-to-dial through Kixie PowerCall — dials from your assigned line">&#9742; Dial</a>
+      <span style="font-size:11px;color:var(--mute)">any number — dials via Kixie PowerCall, no card needed</span>
+    </div>
   </header>
 
   <div class="tiles" id="tiles"></div>
@@ -553,6 +559,13 @@ var KIXIE_LINES = {
   "tcurcio@tworld.com":     { num: "213-214-1196", label: "Los Angeles" }
 };
 function myKixie(){ return (me && KIXIE_LINES[String(me.email || "").toLowerCase()]) || null; }
+(function wireQuickDial(){
+  var di=document.getElementById("dialnum"), dg=document.getElementById("dialgo");
+  if(!di||!dg) return;
+  function norm(v){ var plus=v.trim().charAt(0)==="+"; var d=v.replace(/\D/g,""); if(plus) return "+"+d; if(d.length===10) return "+1"+d; if(d.length===11&&d.charAt(0)==="1") return "+"+d; return d?"+"+d:""; }
+  di.addEventListener("input",function(){ var t=norm(di.value); if(t){ dg.href="tel:"+t; dg.style.pointerEvents=""; dg.style.opacity=""; dg.innerHTML="&#9742; Dial "+t; } else { dg.href="tel:"; dg.style.pointerEvents="none"; dg.style.opacity=".45"; dg.innerHTML="&#9742; Dial"; } });
+  di.addEventListener("keydown",function(e){ if(e.key==="Enter"){ var t=norm(di.value); if(t){ dg.click(); } } });
+})();
 // parse the model revenue estimate to a sortable number: range -> midpoint,
 // K/M/B expanded, "$1M+" -> 1,000,000, missing/unparseable -> -1 (sinks to bottom).
 function revNum(f){
