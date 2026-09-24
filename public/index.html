@@ -333,7 +333,7 @@ var SLACK_STATUSES = [
 var SLACK_CLOSED = { "Done": 1, "Dropped": 1 };
 
 var sb = null, me = null, team = [], FIRMS = [], WORK = {}, LOG = {}, SLACK = [], SLOG = {}, QUEUE = {},
-    UNMATCHED = [], EAQ = {}, ISTATS = [], VISITS = {},
+    UNMATCHED = [], EAQ = {}, ISTATS = [], VISITS = {}, KCALLS = [],
     view = "all", stateFilter = "ALL", ownerFilter = "ALL", tier = 1, q = "", p1Only = false, replyOnly = false, acuteOnly = false, bounceOnly = false, eaqOnly = false, scoreOpen = false, adminOpen = false, saasOnly = false;
 
 // ---------------------------------------------------------------- sign in
@@ -417,7 +417,8 @@ function load() {
     sb.from("unmatched_replies").select("*").eq("resolved", false).order("received_at", { ascending: false }),
     sb.from("eaq_submissions").select("firm_id,contact_name,timeline,created_at").not("firm_id", "is", null).order("created_at", { ascending: false }),
     sb.from("instantly_campaign_stats").select("*"),
-    sb.from("page_visits").select("firm_id,page,broker_code,created_at").order("created_at", { ascending: false }).limit(2000)
+    sb.from("page_visits").select("firm_id,page,broker_code,created_at").order("created_at", { ascending: false }).limit(2000),
+    sb.from("kixie_calls").select("*").order("started_at", { ascending: false }).limit(5000)
   ]).then(function (r) {
     if (r[0].error) throw r[0].error;
     team  = r[0].data || [];
@@ -435,6 +436,7 @@ function load() {
     EAQ = {}; ((r[8] && r[8].data) || []).forEach(function (s) { if (s.firm_id && !EAQ[s.firm_id]) EAQ[s.firm_id] = s; });
     ISTATS = (r[9] && r[9].data) || [];
     VISITS = {}; ((r[10] && r[10].data) || []).forEach(function (v) { if (v.firm_id) (VISITS[v.firm_id] = VISITS[v.firm_id] || []).push(v); });
+    KCALLS = (r[11] && r[11].data) || [];
   });
 }
 // a prospect returned the sell-side readiness intake for this firm — the strongest
@@ -1045,6 +1047,33 @@ function adminHtml(){
       + '<tr><th>Firm</th><th>St</th><th>Page</th><th>Last open</th></tr>'+warmRows+'</table></div>';
     visitCard += '<p class="sfoot">These lingered on a link but didn’t fill the form — warm, call them. Submitters move to 📋 INTAKE.</p></div>';
   }
+  // Kixie call activity (last 30 days), grouped by Kixie agent
+  var kSince = Date.now() - 30*864e5, kByAgent = {};
+  (KCALLS||[]).forEach(function(c){
+    var t = c.started_at ? Date.parse(c.started_at) : (c.created_at ? Date.parse(c.created_at) : 0);
+    if (t && t < kSince) return;
+    var key = (c.agent_email||c.agent_name||"-");
+    var g = kByAgent[key] || (kByAgent[key] = {name:(c.agent_name||c.agent_email||"-"), dials:0, conn:0, talk:0, vm:0});
+    g.dials++;
+    var st=(c.call_status||"").toLowerCase(), answered = st.indexOf("answer")>=0 || (Number(c.duration_sec)>0 && st.indexOf("miss")<0);
+    if (answered){ g.conn++; g.talk += Number(c.duration_sec)||0; }
+    var disp=(c.disposition||"").toLowerCase();
+    if (disp.indexOf("voicemail")>=0 || disp.indexOf("left message")>=0 || st.indexOf("voicemail")>=0) g.vm++;
+  });
+  function kfmt(s){ s=Math.round(s||0); var h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60; return h?(h+"h "+(m<10?"0":"")+m+"m"):(m?(m+"m "+(ss<10?"0":"")+ss+"s"):(ss+"s")); }
+  function kpc(a,b){ return b?Math.round(a/b*100)+"%":"-"; }
+  var kAgents = Object.keys(kByAgent).map(function(k){return kByAgent[k];}).sort(function(a,b){return b.dials-a.dials;});
+  var kTot={dials:0,conn:0,talk:0,vm:0}; kAgents.forEach(function(g){kTot.dials+=g.dials;kTot.conn+=g.conn;kTot.talk+=g.talk;kTot.vm+=g.vm;});
+  var kRows = kAgents.map(function(g){ return '<tr><td class="bn">'+esc(g.name)+'</td><td>'+g.dials+'</td><td class="hi">'+g.conn+'</td><td class="hi">'+kpc(g.conn,g.dials)+'</td><td>'+kfmt(g.talk)+'</td><td>'+(g.conn?kfmt(g.talk/g.conn):'-')+'</td><td>'+g.vm+'</td></tr>'; }).join("");
+  var kixieCard = '<div class="scard"><h3>Kixie calls · last 30 days</h3>';
+  if (!kAgents.length) {
+    kixieCard += '<p class="sfoot">No Kixie calls captured yet. Once the Kixie webhook is set up (Kixie → Manage → Automations → Webhooks → End Call → this board ingest URL), every dial lands here — connect rate and talk time per broker.</p></div>';
+  } else {
+    kixieCard += '<div class="stbl"><table><tr><th>Broker</th><th>Dials</th><th>Conn.</th><th>Connect%</th><th>Talk</th><th>Avg&nbsp;talk</th><th>VM</th></tr>'
+      + kRows
+      + '<tr style="font-weight:700;border-top:2px solid #ccc"><td>All</td><td>'+kTot.dials+'</td><td>'+kTot.conn+'</td><td>'+kpc(kTot.conn,kTot.dials)+'</td><td>'+kfmt(kTot.talk)+'</td><td>'+(kTot.conn?kfmt(kTot.talk/kTot.conn):'-')+'</td><td>'+kTot.vm+'</td></tr>'
+      + '</table></div><p class="sfoot">Connect% = answered ÷ dials; talk time counts answered calls only. Live via the Kixie webhook — refresh to update.</p></div>';
+  }
   return '<div class="score admin">'
     + '<div class="shead"><h2>Admin · team &amp; oversight</h2>'
     + '<div class="ssub">You see every state; each broker sees only their own. '
@@ -1057,6 +1086,7 @@ function adminHtml(){
     + qRows + '</table></div><p class="sfoot">Reachable = has a phone or email; Reply% = replies ÷ contacted; DNC/NFS = share disqualified. Low reachable or high DNC in a tier is a <b>list-quality</b> problem, not effort.</p></div>'
     + emailHealth
     + visitCard
+    + kixieCard
     + '<div class="scard"><h3>Manage team</h3><div class="stbl"><table>'
     + '<tr><th>&nbsp;</th><th>Email</th><th>City</th><th>States</th><th>Role</th><th>&nbsp;</th></tr>'+roster+'</table></div>'
     + '<div class="addform"><div class="afgrid">'
