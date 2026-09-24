@@ -1018,7 +1018,7 @@ function addTeammate(btn){
     var terr = (d.states&&d.states.length) ? " for "+esc(d.states.join(", ")) : "";
     var okmsg;
     if (d.mode === "created") {
-      okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+(ro?" as a <b>read-only viewer</b>":"")+". Send them these to sign in — they change the password after: "
+      okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+(ro?" as a <b>read-only viewer</b> (login auto-expires in 24 hours)":"")+". Send them these to sign in — they change the password after: "
         + "<code>"+esc(d.email)+"</code> &nbsp; <code>"+esc(d.temp_password)+"</code>";
     } else {
       okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+". "+esc(d.note||"");
@@ -1043,6 +1043,7 @@ function resetPw(btn){
     toast('Password reset.');
   }, function(e){ btn.disabled=false; btn.textContent=old; if(res){ res.className='afresult bad'; res.textContent=String(e); } });
 }
+function expDays(iso){ try{ var ms=new Date(iso)-Date.now(); if(ms<=0) return "expired"; var h=Math.ceil(ms/3600000); return h<=48?("expires in "+h+"h"):("expires in "+Math.ceil(h/24)+"d"); }catch(e){ return ""; } }
 function removeTeammate(btn){
   var em=btn.getAttribute('data-em')||'', nm=btn.getAttribute('data-nm')||em;
   if(!em) return;
@@ -1087,7 +1088,7 @@ function adminHtml(){
   var roster = team.map(function(t){
     return '<tr><td class="bn">'+esc(t.full_name)+'</td><td>'+esc(t.email)+'</td>'
       +'<td>'+esc(t.city||'—')+'</td><td>'+esc((t.states||[]).join(", ")||'—')+'</td>'
-      +'<td>'+(t.readonly?"viewer":(t.is_admin?"admin":"broker"))+'</td>'+'<td><button class="rpw" data-em="'+esc(t.email)+'" onclick="resetPw(this)" style="font-size:11px;padding:2px 8px;cursor:pointer">Reset&nbsp;password</button>'+((me&&t.email===me.email)?"":(' <button class="rpw" data-em="'+esc(t.email)+'" data-nm="'+esc(t.full_name||t.email)+'" onclick="removeTeammate(this)" style="font-size:11px;padding:2px 8px;cursor:pointer;border-color:var(--red);color:var(--red)">Remove</button>'))+'</td></tr>';
+      +'<td>'+(t.readonly?("viewer"+(t.expires_at?' <span style="color:var(--red);font-size:10px;white-space:nowrap">('+expDays(t.expires_at)+')</span>':"")):(t.is_admin?"admin":"broker"))+'</td>'+'<td><button class="rpw" data-em="'+esc(t.email)+'" onclick="resetPw(this)" style="font-size:11px;padding:2px 8px;cursor:pointer">Reset&nbsp;password</button>'+((me&&t.email===me.email)?"":(' <button class="rpw" data-em="'+esc(t.email)+'" data-nm="'+esc(t.full_name||t.email)+'" onclick="removeTeammate(this)" style="font-size:11px;padding:2px 8px;cursor:pointer;border-color:var(--red);color:var(--red)">Remove</button>'))+'</td></tr>';
   }).join("");
   // Instantly campaign email-health (campaign-level rates; per-broker isn't in Instantly's API)
   function pr(a,b){ return b ? Math.round(a/b*100)+'%' : '—'; }
