@@ -209,7 +209,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 <div class="wrap">
   <header>
     <div class="me">Signed in as <b id="whoami"></b><span id="mykixie" class="mykixie"></span><br>
-      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" id="qlink" href="../valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — your name is baked into the link so a prospect emails the form back to you">📝 Valuation Questionnaire</a><a class="guidebtn alt" id="mysourcing" href="sourcing/" target="_blank" rel="noopener" style="display:none" title="Your private buy-box sourcing — owner-only">🔒 My Private Sourcing</a></div>
+      <button class="link" id="signout">sign out</button><br><a class="guidebtn" href="guide.html" target="_blank" rel="noopener">📋 Team Guide</a><a class="guidebtn alt" id="qlink" href="../valuation/" target="_blank" rel="noopener" title="Sell-side readiness intake — your name is baked into the link so a prospect emails the form back to you">📝 Valuation Questionnaire</a><a class="guidebtn alt" id="mysourcing" href="sourcing/" target="_blank" rel="noopener" style="display:none" title="Your private buy-box sourcing — owner-only">🔒 My Private Sourcing</a><a class="guidebtn alt" id="addleadbtn" href="#" title="Add an outside lead to your board" style="border-color:var(--green);color:var(--green)">➕ Add lead</a></div>
     <h1>Deal Board</h1>
     <div class="sub">Buy-side mandate · <span id="stamp"></span></div>
     <div class="qdial" style="margin-top:7px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -219,6 +219,27 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
       <span style="font-size:11px;color:var(--mute)">any number — dials via Kixie PowerCall, no card needed</span>
     </div>
   </header>
+
+  <div id="addleadpanel" class="scard" style="display:none;margin:10px 0;max-width:700px">
+    <h3 style="margin-top:0">Add an outside lead</h3>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:7px">
+      <input id="al_company" placeholder="Company name *" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+      <input id="al_owner" placeholder="Owner / contact name" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+      <input id="al_email" type="email" placeholder="Email" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+      <input id="al_phone" placeholder="Phone" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+      <input id="al_state" placeholder="State e.g. FL *" maxlength="2" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-transform:uppercase">
+      <input id="al_city" placeholder="City" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+      <input id="al_low" placeholder="Line of work (e.g. Surveying &amp; mapping)" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+      <input id="al_website" placeholder="Website" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+      <input id="al_note" placeholder="Note (optional)" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px;grid-column:1/3">
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="chip on" id="addleadgo">Add to board</button>
+      <button class="chip" id="addleadcancel">Cancel</button>
+      <span id="addleadres" class="afresult"></span>
+    </div>
+    <p class="sfoot">Adds the card to your board (claimed to you, in that state) — callable now, and it joins email outreach automatically once sending is live.</p>
+  </div>
 
   <div class="tiles" id="tiles"></div>
 
@@ -559,6 +580,30 @@ var KIXIE_LINES = {
   "tcurcio@tworld.com":     { num: "213-214-1196", label: "Los Angeles" }
 };
 function myKixie(){ return (me && KIXIE_LINES[String(me.email || "").toLowerCase()]) || null; }
+function addLead(btn){
+  var g=function(id){var e=document.getElementById(id);return e?(e.value||"").trim():"";};
+  var res=document.getElementById("addleadres");
+  var body={company:g("al_company"),owner:g("al_owner"),email:g("al_email"),phone:g("al_phone"),state:g("al_state"),city:g("al_city"),line_of_work:g("al_low"),website:g("al_website"),note:g("al_note")};
+  if(!body.company){ if(res){res.className="afresult bad";res.textContent="Company name is required.";} return; }
+  if(!/^[A-Za-z]{2}$/.test(body.state)){ if(res){res.className="afresult bad";res.textContent="A 2-letter state is required (e.g. FL).";} return; }
+  if(!body.email && !body.phone){ if(res){res.className="afresult bad";res.textContent="Add an email or a phone so it can be worked.";} return; }
+  var old=btn.textContent; btn.disabled=true; btn.textContent="Adding…"; if(res){res.className="afresult";res.textContent="";}
+  sb.functions.invoke("add-lead",{body:body}).then(function(r){
+    btn.disabled=false; btn.textContent=old; var d=r&&r.data,err=r&&r.error;
+    if(!d||!d.ok){ if(res){res.className="afresult bad";res.textContent=(d&&d.error)||(err&&err.message)||"Could not add the lead.";} return; }
+    if(res){res.className="afresult ok";res.innerHTML="<b>"+esc(d.company)+"</b> added to your "+esc(d.state)+" board.";}
+    ["al_company","al_owner","al_email","al_phone","al_state","al_city","al_low","al_website","al_note"].forEach(function(id){var e=document.getElementById(id);if(e)e.value="";});
+    toast("Lead added.");
+    if(typeof load==="function"){ load().then(function(){ if(typeof render==="function")render(); if(typeof counts==="function")counts(); }); }
+  }, function(e){ btn.disabled=false; btn.textContent=old; if(res){res.className="afresult bad";res.textContent=String(e);} });
+}
+(function wireAddLead(){
+  var b=document.getElementById("addleadbtn"), p=document.getElementById("addleadpanel"), go=document.getElementById("addleadgo"), cx=document.getElementById("addleadcancel");
+  if(b&&p){ b.addEventListener("click",function(e){ e.preventDefault(); var vis=(p.style.display==="block"); p.style.display=vis?"none":"block"; if(!vis){var c=document.getElementById("al_company"); if(c)c.focus();} }); }
+  if(go) go.addEventListener("click",function(){ addLead(go); });
+  if(cx&&p) cx.addEventListener("click",function(){ p.style.display="none"; });
+})();
+
 (function wireQuickDial(){
   var di=document.getElementById("dialnum"), dg=document.getElementById("dialgo");
   if(!di||!dg) return;
