@@ -1018,7 +1018,7 @@ function addTeammate(btn){
     var terr = (d.states&&d.states.length) ? " for "+esc(d.states.join(", ")) : "";
     var okmsg;
     if (d.mode === "created") {
-      okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+(ro?" as a <b>read-only viewer</b> (login auto-expires in 24 hours)":"")+". Send them these to sign in — they change the password after: "
+      okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+(ro?" as a <b>read-only viewer</b> (login auto-expires in 72 hours)":"")+". Send them these to sign in — they change the password after: "
         + "<code>"+esc(d.email)+"</code> &nbsp; <code>"+esc(d.temp_password)+"</code>";
     } else {
       okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+". "+esc(d.note||"");
