@@ -440,7 +440,7 @@ function fetchAll(table, order, asc) {
 function load() {
   return Promise.all([
     sb.from("team").select("*").eq("active", true),
-    fetchAll("firms", "score", false),
+    fetchAll("firms", "firm_id", true),   // page by unique PK: score has 800+ ties, unstable across .range() pages dropped rows (render re-sorts by revenue client-side)
     fetchAll("work"),
     fetchAll("activity", "at", true),
     sb.from("slack_actions").select("*").order("id"),
