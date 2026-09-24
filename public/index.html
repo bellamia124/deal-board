@@ -958,6 +958,18 @@ function addTeammate(btn){
     toast("Teammate added.");
   }, function(e){ btn.disabled=false; btn.textContent=old; if(res){ res.className="afresult bad"; res.textContent=String(e); } });
 }
+function resetPw(btn){
+  var em=btn.getAttribute('data-em')||''; var res=$('#addresult'); if(!em) return;
+  if(!confirm('Reset the deal-board password for '+em+'? Their current password stops working; send them the new one-time password.')) return;
+  var old=btn.textContent; btn.disabled=true; btn.textContent='Resetting\u2026';
+  if(res){ res.className='afresult'; res.textContent=''; }
+  sb.functions.invoke('admin-reset-password',{ body:{ email:em } }).then(function(r){
+    btn.disabled=false; btn.textContent=old; var d=r&&r.data, err=r&&r.error;
+    if(!d||!d.ok){ if(res){ res.className='afresult bad'; res.textContent=(d&&d.error)||(err&&err.message)||'Could not reset password.'; } return; }
+    if(res){ res.className='afresult ok'; res.innerHTML='Password reset for <b>'+esc(d.full_name||d.email)+'</b>. Send them these \u2014 they change it after signing in: <code>'+esc(d.email)+'</code> &nbsp; <code>'+esc(d.temp_password)+'</code>'; }
+    toast('Password reset.');
+  }, function(e){ btn.disabled=false; btn.textContent=old; if(res){ res.className='afresult bad'; res.textContent=String(e); } });
+}
 function adminHtml(){
   var wk = reachedWeekSet();
   var per = {}; team.forEach(function(t){ per[t.email] = {t:t, inplay:0, cont:0, conn:0, rep:0, bnc:0, wk:0}; });
@@ -990,7 +1002,7 @@ function adminHtml(){
   var roster = team.map(function(t){
     return '<tr><td class="bn">'+esc(t.full_name)+'</td><td>'+esc(t.email)+'</td>'
       +'<td>'+esc(t.city||'—')+'</td><td>'+esc((t.states||[]).join(", ")||'—')+'</td>'
-      +'<td>'+(t.is_admin?'admin':'broker')+'</td></tr>';
+      +'<td>'+(t.is_admin?'admin':'broker')+'</td>'+'<td><button class="rpw" data-em="'+esc(t.email)+'" onclick="resetPw(this)" style="font-size:11px;padding:2px 8px;cursor:pointer">Reset&nbsp;password</button></td></tr>';
   }).join("");
   // Instantly campaign email-health (campaign-level rates; per-broker isn't in Instantly's API)
   function pr(a,b){ return b ? Math.round(a/b*100)+'%' : '—'; }
@@ -1046,7 +1058,7 @@ function adminHtml(){
     + emailHealth
     + visitCard
     + '<div class="scard"><h3>Manage team</h3><div class="stbl"><table>'
-    + '<tr><th>&nbsp;</th><th>Email</th><th>City</th><th>States</th><th>Role</th></tr>'+roster+'</table></div>'
+    + '<tr><th>&nbsp;</th><th>Email</th><th>City</th><th>States</th><th>Role</th><th>&nbsp;</th></tr>'+roster+'</table></div>'
     + '<div class="addform"><div class="afgrid">'
     + '<input id="tm_name" placeholder="Full name">'
     + '<input id="tm_email" type="email" placeholder="work email">'
