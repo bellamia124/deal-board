@@ -188,6 +188,10 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 .afresult.ok{color:var(--green)} .afresult.bad{color:var(--red)}
 .afresult a{color:var(--green)}
 .afresult code{background:var(--wash);color:var(--ink);padding:2px 7px;border-radius:5px;font-family:"Space Mono",monospace;font-size:12.5px;user-select:all}
+.roview .ctl{display:none!important}
+.roview #addleadbtn,.roview #admintoggle,.roview #mysourcing,.roview #scoretoggle,.roview .qdial{display:none!important}
+#robanner{display:none}
+.roview #robanner{display:block;background:var(--green);color:#fff;padding:9px 14px;border-radius:8px;font-weight:600;margin:10px 0 4px;font-size:13px}
 </style>
 </head>
 <body>
@@ -206,6 +210,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);
 </div>
 
 <div id="app" hidden>
+  <div id="robanner">👁 Read-only preview — you’re viewing the live board. Editing, dialing, quick-dial, and admin tools are turned off for this login.</div>
 <div class="wrap">
   <header>
     <div class="me">Signed in as <b id="whoami"></b><span id="mykixie" class="mykixie"></span><br>
@@ -986,6 +991,7 @@ function reachedWeekCount(){ return Object.keys(reachedWeekSet()).length; }
 // ---------------------------------------------------------- territory / admin
 function myRow(){ return team.filter(function(t){ return me && t.email === me.email; })[0] || {}; }
 function isAdmin(){ return !!myRow().is_admin; }
+function isReadonly(){ return !!myRow().readonly; }
 function myStates(){ var s = myRow().states; return (s && s.length) ? s : []; }
 // a rep sees only firms in their states; an admin (Jason) sees everything.
 function inTerritory(f){ if (isAdmin()) return true; var st = myStates(); return !st.length || st.indexOf(f.state) >= 0; }
@@ -1001,7 +1007,8 @@ function addTeammate(btn){
   if (!nm || !em) { if(res){ res.className="afresult bad"; res.textContent="Name and email are required."; } return; }
   var old=btn.textContent; btn.disabled=true; btn.textContent="Adding…";
   if(res){ res.className="afresult"; res.textContent=""; }
-  sb.functions.invoke("admin-add-teammate", { body:{ full_name:nm, email:em, city:cy, states:stx } }).then(function(r){
+  var ro=(($("#tm_readonly")||{}).checked)||false;
+  sb.functions.invoke("admin-add-teammate", { body:{ full_name:nm, email:em, city:cy, states:stx, readonly:ro } }).then(function(r){
     btn.disabled=false; btn.textContent=old;
     var d=r&&r.data, err=r&&r.error;
     if (!d || !d.ok) {
@@ -1011,7 +1018,7 @@ function addTeammate(btn){
     var terr = (d.states&&d.states.length) ? " for "+esc(d.states.join(", ")) : "";
     var okmsg;
     if (d.mode === "created") {
-      okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+". Send them these to sign in — they change the password after: "
+      okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+(ro?" as a <b>read-only viewer</b>":"")+". Send them these to sign in — they change the password after: "
         + "<code>"+esc(d.email)+"</code> &nbsp; <code>"+esc(d.temp_password)+"</code>";
     } else {
       okmsg = "<b>"+esc(d.full_name)+"</b> added"+terr+". "+esc(d.note||"");
@@ -1035,6 +1042,18 @@ function resetPw(btn){
     if(res){ res.className='afresult ok'; res.innerHTML='Password reset for <b>'+esc(d.full_name||d.email)+'</b>. Send them these \u2014 they change it after signing in: <code>'+esc(d.email)+'</code> &nbsp; <code>'+esc(d.temp_password)+'</code>'; }
     toast('Password reset.');
   }, function(e){ btn.disabled=false; btn.textContent=old; if(res){ res.className='afresult bad'; res.textContent=String(e); } });
+}
+function removeTeammate(btn){
+  var em=btn.getAttribute('data-em')||'', nm=btn.getAttribute('data-nm')||em;
+  if(!em) return;
+  if(me && em===me.email){ alert("You can't remove yourself."); return; }
+  if(!confirm('Remove '+nm+' from the board?\n\nTheir login stops working immediately and they drop off the team. Their logged history is kept — you can re-add them later.')) return;
+  var old=btn.textContent; btn.disabled=true; btn.textContent='Removing…';
+  sb.from('team').update({active:false}).eq('email',em).then(function(r){
+    if(r.error){ btn.disabled=false; btn.textContent=old; alert('Could not remove: '+r.error.message); return; }
+    reloadTeam(function(){ if(adminOpen&&$("#adminpanel")) $("#adminpanel").innerHTML=adminHtml(); brokerChips(); });
+    toast(nm+' removed.');
+  });
 }
 function adminHtml(){
   var wk = reachedWeekSet();
@@ -1068,7 +1087,7 @@ function adminHtml(){
   var roster = team.map(function(t){
     return '<tr><td class="bn">'+esc(t.full_name)+'</td><td>'+esc(t.email)+'</td>'
       +'<td>'+esc(t.city||'—')+'</td><td>'+esc((t.states||[]).join(", ")||'—')+'</td>'
-      +'<td>'+(t.is_admin?'admin':'broker')+'</td>'+'<td><button class="rpw" data-em="'+esc(t.email)+'" onclick="resetPw(this)" style="font-size:11px;padding:2px 8px;cursor:pointer">Reset&nbsp;password</button></td></tr>';
+      +'<td>'+(t.readonly?"viewer":(t.is_admin?"admin":"broker"))+'</td>'+'<td><button class="rpw" data-em="'+esc(t.email)+'" onclick="resetPw(this)" style="font-size:11px;padding:2px 8px;cursor:pointer">Reset&nbsp;password</button>'+((me&&t.email===me.email)?"":(' <button class="rpw" data-em="'+esc(t.email)+'" data-nm="'+esc(t.full_name||t.email)+'" onclick="removeTeammate(this)" style="font-size:11px;padding:2px 8px;cursor:pointer;border-color:var(--red);color:var(--red)">Remove</button>'))+'</td></tr>';
   }).join("");
   // Instantly campaign email-health (campaign-level rates; per-broker isn't in Instantly's API)
   function pr(a,b){ return b ? Math.round(a/b*100)+'%' : '—'; }
@@ -1158,9 +1177,10 @@ function adminHtml(){
     + '<input id="tm_email" type="email" placeholder="work email">'
     + '<input id="tm_city" placeholder="City (e.g. Austin, TX)">'
     + '<input id="tm_states" placeholder="States, comma-sep (e.g. TX, AZ)">'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="tm_readonly"> read-only viewer</label>'
     + '<button class="chip on" id="addteammate">+ Add teammate</button></div>'
     + '<div id="addresult" class="afresult"></div>'
-    + '<p class="sfoot">One step adds them across the board: creates their login, opens their state(s) to them, and hands you a one-time password to send them (no email needed — they change it after first sign-in).</p>'
+    + '<p class="sfoot">One step adds them across the board: creates their login, opens their state(s) to them, and hands you a one-time password to send them (no email needed — they change it after first sign-in). Tick <b>read-only viewer</b> for a demo login (e.g. to show your boss) — they can browse everything but change nothing; hit <b>Remove</b> when the demo’s done.</p>'
     + '</div></div></div>';
 }
 function scoreHtml(){
@@ -1224,6 +1244,7 @@ function scoreHtml(){
 }
 
 function render() {
+  try{ document.body.classList.toggle("roview", isReadonly()); }catch(e){}
   var adc = $("#admintoggle"); if (adc) adc.style.display = isAdmin() ? "" : "none";
   var _privUsers = ["jasoncurcio@tworld.com","tcurcio@tworld.com","mnicoletti@tworld.com"]; var msc = $("#mysourcing"); if (msc) msc.style.display = (me && _privUsers.indexOf(String(me.email||"").toLowerCase()) >= 0) ? "" : "none";
   var scc = $("#scoretoggle"); if (scc) scc.classList.toggle("on", scoreOpen && !adminOpen);
