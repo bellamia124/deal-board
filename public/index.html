@@ -301,6 +301,11 @@ function toast(m) {
   var t = $("#toast"); t.textContent = m; t.style.display = "block";
   clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; }, 3400);
 }
+function replyToast(m){
+  var t = $("#toast"); if(!t) return; t.textContent = m; t.style.display = "block"; t.style.cursor = "pointer";
+  t.onclick = function(){ replyOnly = true; saasOnly = false; p1Only = false; acuteOnly = false; bounceOnly = false; eaqOnly = false; if (q){ var sb2=$("#search"); if(sb2){sb2.value="";} q=""; } render(); counts(); t.style.display="none"; t.onclick=null; t.style.cursor=""; };
+  clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; t.onclick=null; t.style.cursor=""; }, 12000);
+}
 // Copy rich HTML + plain text so a paste into Outlook keeps a real hyperlink.
 // Falls back to plain text where the async Clipboard API isn't available.
 function copyRich(html, text, okMsg) {
@@ -492,6 +497,7 @@ function subscribe() {
     })
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity" }, function (p) {
       var a = p.new; (LOG[a.firm_id] = LOG[a.firm_id] || []).push(a); renderOne(a.firm_id); counts();
+      if (/repl/i.test(a.what || "")) { var _rf=null; for (var _i=0;_i<FIRMS.length;_i++){ if(FIRMS[_i].firm_id===a.firm_id){_rf=FIRMS[_i];break;} } replyToast("\u2709 New reply \u2014 " + ((_rf&&_rf.company)||a.firm_id) + " \u2014 tap to open."); }
     })
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "unmatched_replies" }, function (p) {
       if (p.new && !p.new.resolved) { UNMATCHED.unshift(p.new); paintUnmatched(); counts(); }
