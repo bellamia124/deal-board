@@ -1367,7 +1367,7 @@ function counts() {
   var ace = $("#t-acute"); if (ace) ace.textContent = acn;
   var bnn = T.filter(function (f) { return isBounced(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
   var bne = $("#t-bounce"); if (bne) bne.textContent = bnn;
-  var bnc = $("#bouncechip"); if (bnc) bnc.style.display = bnn ? "" : "none";
+  var bnc = $("#bouncechip"); if (bnc) bnc.style.display = "";  // always visible like the other signal chips (was hiding at 0, looked broken)
   var eqn = T.filter(function (f) { return isSubmitted(f) && !CLOSED[(WORK[f.firm_id]||{}).status]; }).length;
   var eqe = $("#t-eaq"); if (eqe) eqe.textContent = eqn;
   var eqc = $("#eaqchip"); if (eqc) eqc.style.display = eqn ? "" : "none";
