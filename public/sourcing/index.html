@@ -125,6 +125,9 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
         <option value="interested">Interested</option>
         <option value="meeting">Meeting</option>
         <option value="loi">LOI</option>
+        <option value="marketing">Marketing Agreement</option>
+        <option value="oneshot">One-Shot</option>
+        <option value="sold">Sold</option>
         <option value="closed">Closed (won)</option>
         <option value="passed">Passed</option>
       </select>
@@ -281,7 +284,8 @@ label.fld input,label.fld textarea,label.fld select{font-weight:400;color:var(--
 <script>
 const cfg = window.DEAL_BOARD_CONFIG || {};
 const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
-let ME=null, MANDATES=[], CURRENT=null, FIRMS=[], ACT={};
+let ME=null, MANDATES=[], CURRENT=null, FIRMS=[], ACT={}, REFS={};
+async function loadRefs(){ REFS={}; try{ const {data:rr}=await sb.from('mandate_referrals').select('*').eq('mandate_id',CURRENT); (rr||[]).forEach(r=>{REFS[r.mandate_firm_id]=r;}); }catch(e){} }
 const $=id=>document.getElementById(id);
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -395,6 +399,7 @@ async function loadFirms(){
   ACT={};
   const {data:acts}=await sb.from('mandate_activity').select('*').eq('mandate_id',CURRENT).order('at',{ascending:false});
   (acts||[]).forEach(a=>{(ACT[a.mandate_firm_id]=ACT[a.mandate_firm_id]||[]).push(a);});
+  await loadRefs();
   // state filter options (industry/subcategory come from the static taxonomy)
   const states=[...new Set(FIRMS.map(f=>f.state).filter(Boolean))].sort();
   $('stateSel').innerHTML='<option value="">All states</option>'+states.map(s=>`<option>${esc(s)}</option>`).join('');
@@ -459,6 +464,8 @@ function histHtml(f,expanded){
   h+='</div>';
   return h;
 }
+var STLABEL={new:'New',claimed:'Claimed',contacted:'Contacted',interested:'Interested',meeting:'Meeting',loi:'LOI',marketing:'Marketing Agreement',oneshot:'One-Shot',sold:'Sold',closed:'Closed (won)',passed:'Passed',dropped:'Dropped / hidden'};
+var STORDER=['new','claimed','contacted','interested','meeting','loi','marketing','oneshot','sold','closed','passed','dropped'];
 function cardHtml(f,expanded){
   const th=telHref(f.phone);
   const dnc=f.do_not_call;
@@ -478,10 +485,12 @@ function cardHtml(f,expanded){
   if(/namesake|unconfirmed/i.test(nn)) flags.push('<span class="flag f-warn">principal unconfirmed</span>');
   const who = f.principal ? `<span class="who2">${esc(f.principal)}</span>${f.title?` <span class="muted">· ${esc(f.title)}</span>`:''}` : '<span class="muted">owner not yet enriched</span>';
   const rev = f.revenue_estimate ? `<span class="rev">${esc(f.revenue_estimate.replace(/\s*\(.*\)/,''))}</span>` : '';
-  const opts=['new','claimed','contacted','interested','meeting','loi','closed','passed','dropped'].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('');
+  const opts=STORDER.map(s=>`<option value="${s}" ${f.status===s?'selected':''}>${STLABEL[s]||s}</option>`).join('');
+  const ref=REFS[f.id];
+  const refBadge = ref ? `<span class="flag" style="background:#00461C;color:#fff;border-color:#00461C">\uD83D\uDCC4 Referral\u00A0\u00B7\u00A0${ref.engagement_type==='marketing'?'Marketing':ref.engagement_type==='oneshot'?'One-Shot':'\u2014'}${ref.status==='sold'?'\u00A0\u00B7\u00A0SOLD':''}</span>` : '';
   const badges=(f.do_not_call?'<span class="flag f-warn">🚫 DNC</span>':'')+(isDNE(f)?'<span class="flag f-warn">🚫 No email</span>':'')+(bounced?'<span class="flag f-warn">⚠ Bounced</span>':'');
   return `<div class="card" data-id="${f.id}">
-    <div class="statrow"><span class="pill ${pillClass(f.score)}">${f.score||0}</span><span class="vert">${esc(f.vertical||'')}</span>${badges}</div>
+    <div class="statrow"><span class="pill ${pillClass(f.score)}">${f.score||0}</span><span class="vert">${esc(f.vertical||'')}</span>${badges}${refBadge}</div>
     <h3>${esc(f.company)}</h3>
     <div class="rowline">${who}</div>
     <div class="rowline">${rev} ${(f.address||f.city)?`<span class="muted">📍 ${esc([f.address,f.city,f.state].filter(Boolean).join(', '))}</span>`:'<span class="muted">📍 address pending</span>'}</div>
@@ -498,6 +507,7 @@ function cardHtml(f,expanded){
       <span class="chiplbl">✉ Listing</span>
       <button class="chip" data-copy="b-intro">1·intro</button><button class="chip" data-copy="b-value">2·value</button><button class="chip" data-copy="b-breakup">3·breakup</button><button class="chip" data-copy="b-call">☎ opener</button>
     </div>
+    ${ref?`<div class="chips"><a class="chip" style="border-color:var(--green);color:var(--green);font-weight:700" href="referral.html?firm=${f.id}" target="_blank" rel="noopener">📄 Referral form</a><span class="muted" style="font-size:11px">payable to Transworld of Florida · 20%</span></div>`:''}
     <div class="logrow">
       <span class="loglbl">Log</span>
       <button class="logbtn" data-log="call:called">☎ Called</button><button class="logbtn g" data-log="call:noanswer">No answer</button><button class="logbtn g" data-log="call:vm">Left VM</button>
@@ -527,6 +537,7 @@ function bindCards(){
       if(error){toast('Save failed: '+error.message);return;}
       await logActivity(id,'Status → '+status,''); pushAct(id,'Status → '+status,'');
       const f=FIRMS.find(x=>x.id===id); if(f)f.status=status;
+      if(['marketing','oneshot','sold'].indexOf(status)>=0){ await loadRefs(); }
       toast('Status saved'); render();
     };
     c.querySelector('.act').onclick=async ()=>{
