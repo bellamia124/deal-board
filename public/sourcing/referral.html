@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client Referral Form</title>
+<style>
+  :root{ --gold:#8a6d3b; --green:#00461C; --ink:#111; --line:#111; --mute:#666; --wash:#f6f4ef; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#eceae4;color:var(--ink);font:14px/1.45 "Helvetica Neue",Arial,sans-serif}
+  .bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #ddd;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .bar h1{font-size:14px;margin:0 10px 0 0;color:var(--green)}
+  .bar label{font-size:11px;color:var(--mute);display:flex;flex-direction:column;gap:2px}
+  .bar input,.bar select{font-size:13px;padding:5px 7px;border:1px solid #ccc;border-radius:6px}
+  .bar .btn{font-size:13px;font-weight:700;padding:7px 12px;border-radius:7px;border:1px solid var(--green);background:var(--green);color:#fff;cursor:pointer}
+  .bar .btn.ghost{background:#fff;color:var(--green)}
+  .bar .msg{font-size:12px;color:var(--mute)}
+  .page{max-width:820px;margin:16px auto;background:#fff;padding:44px 54px;box-shadow:0 1px 6px rgba(0,0,0,.15)}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+  .logo .dia{width:30px;height:30px;background:linear-gradient(135deg,var(--gold) 50%,var(--green) 50%);transform:rotate(45deg)}
+  .logo .wm{font-weight:800;letter-spacing:1px;color:var(--green);font-size:22px}
+  .logo .wm small{display:block;font-weight:500;letter-spacing:2px;color:var(--gold);font-size:11px}
+  h2.doc{text-align:center;color:var(--gold);letter-spacing:1px;font-size:20px;margin:0 0 22px}
+  .sec{display:flex;align-items:center;gap:8px;margin:18px 0 6px;font-weight:700}
+  .sec .sq{width:13px;height:13px;background:var(--gold)}
+  .frow{display:flex;border-bottom:1px solid var(--line);padding:6px 0 3px;gap:8px;font-size:12.5px}
+  .frow .k{color:#000;font-weight:600;white-space:nowrap}
+  .frow .v{flex:1;min-height:16px}
+  .two{display:flex;gap:24px}
+  .two>div{flex:1}
+  .fee{font-size:12.5px;line-height:1.7;margin:6px 0}
+  .chk{display:inline-block;width:16px;height:16px;border:1.5px solid #000;text-align:center;line-height:14px;font-weight:800;vertical-align:middle;margin:0 4px}
+  .cmt{border:1px solid var(--line);min-height:70px;margin-top:4px}
+  .ack{font-size:10.5px;color:#222;line-height:1.5;margin-top:6px}
+  .ack p{margin:0 0 8px}
+  .sig{display:flex;gap:40px;margin-top:34px}
+  .sig>div{flex:1}
+  .sig .ln{border-top:1px solid #000;padding-top:4px;font-size:11px;color:#333}
+  .datebadge{text-align:right;font-size:12.5px;margin-top:6px}
+  .foot{margin-top:26px;border-top:1px solid #ddd;padding-top:8px;font-size:9.5px;color:#888;display:flex;justify-content:space-between}
+  .pb{page-break-before:always}
+  #err{max-width:820px;margin:16px auto;background:#fff;padding:20px;border-left:4px solid #b00;color:#b00}
+  @media print{
+    body{background:#fff}
+    .bar{display:none}
+    .page{box-shadow:none;margin:0;max-width:none;padding:32px 40px}
+    .pb{page-break-before:always}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar" id="bar" hidden>
+  <h1>Client Referral Form</h1>
+  <label>Receiving broker — name<input id="rb_name" placeholder="e.g. Ilan Stern"></label>
+  <label>Receiving broker — company<input id="rb_co" placeholder="Company"></label>
+  <label>Client side<select id="side"><option value="">—</option><option value="seller">Seller</option><option value="buyer">Buyer</option></select></label>
+  <label>Referral %<input id="pct" type="number" min="0" max="100" style="width:70px"></label>
+  <button class="btn" id="save">Save</button>
+  <button class="btn ghost" id="print">🖨 Print / Save PDF</button>
+  <span class="msg" id="msg"></span>
+</div>
+
+<div id="err" hidden></div>
+
+<div class="page" id="page" hidden>
+  <div class="logo"><div class="dia"></div><div class="wm">TRANSWORLD<small>BUSINESS ADVISORS</small></div></div>
+  <h2 class="doc">CLIENT REFERRAL FORM</h2>
+
+  <div class="datebadge"><b>Date of Referral Agreement:</b> <span id="d_date"></span></div>
+
+  <div class="sec"><span class="sq"></span> Referring (Source) Broker/Agent</div>
+  <div class="frow"><span class="k">NAME:</span><span class="v" id="r_name"></span></div>
+  <div class="frow"><span class="k">COMPANY:</span><span class="v" id="r_co"></span></div>
+  <div class="frow"><span class="k">BUSINESS ADDRESS:</span><span class="v" id="r_addr"></span></div>
+  <div class="two"><div class="frow"><span class="k">BUSINESS CITY:</span><span class="v" id="r_city"></span></div><div class="frow"><span class="k">STATE/REGION:</span><span class="v" id="r_state"></span></div><div class="frow"><span class="k">POSTAL:</span><span class="v" id="r_zip"></span></div></div>
+  <div class="frow"><span class="k">E-MAIL:</span><span class="v" id="r_email"></span></div>
+  <div class="frow"><span class="k">PHONE:</span><span class="v" id="r_phone"></span></div>
+
+  <div class="sec"><span class="sq"></span> Receiving Broker/Agent</div>
+  <div class="frow"><span class="k">NAME:</span><span class="v" id="v_rbname"></span></div>
+  <div class="frow"><span class="k">COMPANY:</span><span class="v" id="v_rbco"></span></div>
+
+  <div class="sec"><span class="sq"></span> Referral Fee</div>
+  <div class="fee">Receiving Broker/Agent agrees to pay a referral fee of <b><span id="pctword"></span> Percent (<span id="pctnum"></span>%)</b> of the Commission received by Transworld for a closed transaction associated with the Client listed below. The Commission is defined as the portion of fee paid to Transworld on that respective side of the transaction (either buyer or seller), but in no event will a referral fee be due on both sides of commission paid for the entire transaction. The referral fee is payable to <b><span id="payee"></span></b>. The Client Referred must be procured through this referral and listed by Receiving Agent. Once a referral fee is paid, this agreement will cease. The term of this agreement is 2 years from the date of signature below.</div>
+
+  <div class="sec"><span class="sq"></span> Signatures</div>
+  <div class="sig"><div><div class="ln">Authorized Referring Broker/Agent &nbsp;&nbsp; Date</div></div><div><div class="ln">Authorized Receiving Broker/Agent &nbsp;&nbsp; Date</div></div></div>
+
+  <!-- Attachment 1 -->
+  <div class="pb"></div>
+  <div style="font-weight:700;color:#333;margin-bottom:2px">Attachment 1</div>
+  <h2 class="doc" style="text-align:left;margin:0 0 16px">CLIENT WORKSHEET</h2>
+  <div class="sec"><span class="sq"></span> Client Referred &nbsp;&nbsp; <span style="font-weight:600;font-size:12.5px">Buyer: <span class="chk" id="ck_buy"></span> &nbsp; Seller: <span class="chk" id="ck_sell"></span></span></div>
+  <div class="frow"><span class="k">NAME:</span><span class="v" id="c_name"></span></div>
+  <div class="frow"><span class="k">ADDRESS:</span><span class="v" id="c_addr"></span></div>
+  <div class="two"><div class="frow"><span class="k">CITY:</span><span class="v" id="c_city"></span></div><div class="frow"><span class="k">STATE/REGION:</span><span class="v" id="c_state"></span></div><div class="frow"><span class="k">POSTAL:</span><span class="v" id="c_zip"></span></div></div>
+  <div class="frow"><span class="k">E-MAIL:</span><span class="v" id="c_email"></span></div>
+  <div class="frow"><span class="k">WEBSITE:</span><span class="v" id="c_web"></span></div>
+  <div class="frow"><span class="k">PHONE:</span><span class="v" id="c_phone"></span></div>
+  <div style="font-weight:600;margin-top:8px">Comments</div>
+  <div class="cmt" id="c_comments"></div>
+
+  <div class="ack">
+    <div class="sec"><span class="sq"></span> Acknowledgements</div>
+    <p>This Agreement shall be governed by the laws of the State of Florida. The prevailing party in any litigation arising under this Agreement shall be entitled to recover reasonable attorneys' fees, costs, and expenses at both trial and appellate levels. Disputes shall be resolved exclusively in the state or federal courts located in Broward County, Florida.</p>
+    <p>Documents may be sent electronically, and such electronic copies and electronic signatures shall be treated for all purposes as (a) properly authorized and/or endorsed; (b) "in writing" and signed; and (c) as an original document.</p>
+    <p>This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations. Referring Broker acknowledges that a sale/purchase by Client and resulting referral commission is not guaranteed. Receiving Source may disclose the information to prospective buyers and other brokers, and may co-broke this listing at its discretion. Referring Source has not made, and will not make, an independent investigation of the accuracy of the information provided by the Client Referred.</p>
+  </div>
+  <div class="foot"><span>Referral Agreement · Transworld Business Advisors</span><span id="genstamp"></span></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="../config.js?v=20260925"></script>
+<script>
+const cfg = window.DEAL_BOARD_CONFIG || {};
+const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+const $=id=>document.getElementById(id);
+function esc(x){return (x==null?'':String(x));}
+const REFERRERS={
+  jasoncurcio:{name:'Jason Curcio',company:'Transworld Business Advisors of Florida',addr:'2121 Vista Parkway',city:'West Palm Beach',region:'FL',postal:'33411',email:'jasoncurcio@tworld.com',phone:'561-419-6575'},
+  tcurcio:{name:'Tim Curcio',company:'Transworld Business Advisors of LA Metro',addr:'680 E Colorado Blvd, Ste 180',city:'Pasadena',region:'CA',postal:'91101',email:'tcurcio@tworld.com',phone:'917-592-4993'},
+  mnicoletti:{name:'Matt Nicoletti',company:'Transworld Business Advisors of Florida',addr:'2121 Vista Parkway',city:'West Palm Beach',region:'FL',postal:'33411',email:'mnicoletti@tworld.com',phone:'860-882-7228'}
+};
+function referrerFor(email){var e=String(email||'').toLowerCase();for(var k in REFERRERS){if(e.indexOf(k)>=0)return REFERRERS[k];}return REFERRERS.jasoncurcio;}
+const NUMWORD={5:'Five',10:'Ten',15:'Fifteen',20:'Twenty',25:'Twenty-Five',30:'Thirty',33:'Thirty-Three',35:'Thirty-Five',40:'Forty',50:'Fifty'};
+function pctWord(n){return NUMWORD[n]||(''+n);}
+function fmtDate(iso){if(!iso)return '';try{return new Date(iso).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});}catch(e){return '';}}
+
+let REF=null, FIRM=null, FIRMID=null;
+
+function fail(m){ $('err').textContent=m; $('err').hidden=false; }
+
+async function boot(){
+  FIRMID=new URLSearchParams(location.search).get('firm');
+  if(!FIRMID){ fail('No lead specified. Open this from a card’s “📄 Referral form” button.'); return; }
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session||!session.user){ fail('Please sign in on the sourcing board first, then reopen the referral form.'); return; }
+  const em=(session.user.email||'').toLowerCase();
+  const {data:refs,error:re}=await sb.from('mandate_referrals').select('*').eq('mandate_firm_id',FIRMID).limit(1);
+  if(re){ fail('Load error: '+re.message); return; }
+  REF=(refs&&refs[0])||null;
+  const {data:firms}=await sb.from('mandate_firms').select('*').eq('id',FIRMID).limit(1);
+  FIRM=(firms&&firms[0])||null;
+  if(!REF && !FIRM){ fail('This lead was not found, or it isn’t on one of your boards.'); return; }
+  if(!REF){ fail('No referral record yet for this lead. Set the card’s status to Marketing Agreement, One-Shot, or Sold first — that creates the record.'); return; }
+  render();
+  $('bar').hidden=false; $('page').hidden=false;
+}
+
+function render(){
+  const src=referrerFor(REF.owner_email);
+  $('r_name').textContent=src.name; $('r_co').textContent=src.company; $('r_addr').textContent=src.addr;
+  $('r_city').textContent=src.city; $('r_state').textContent=src.region; $('r_zip').textContent=src.postal;
+  $('r_email').textContent=src.email; $('r_phone').textContent=src.phone;
+
+  $('v_rbname').textContent=esc(REF.receiving_broker_name);
+  $('v_rbco').textContent=esc(REF.receiving_broker_company);
+  $('rb_name').value=esc(REF.receiving_broker_name);
+  $('rb_co').value=esc(REF.receiving_broker_company);
+  $('side').value=esc(REF.side||'');
+  const pct=Number(REF.referral_pct||20); $('pct').value=pct;
+  $('pctword').textContent=pctWord(pct); $('pctnum').textContent=pct;
+  $('payee').textContent=REF.referral_payee||src.company;
+
+  $('d_date').textContent=fmtDate(REF.engaged_at||REF.created_at);
+
+  // client worksheet
+  $('c_name').textContent=esc(REF.client_company)+(REF.client_principal?(' — '+esc(REF.client_principal)):'');
+  $('c_addr').textContent=esc(REF.client_address);
+  $('c_city').textContent=esc(REF.client_city); $('c_state').textContent=esc(REF.client_state); $('c_zip').textContent=esc(REF.client_postal);
+  $('c_email').textContent=esc(REF.client_email); $('c_web').textContent=esc(REF.client_website); $('c_phone').textContent=esc(REF.client_phone);
+  $('ck_buy').textContent = REF.side==='buyer'?'X':'';
+  $('ck_sell').textContent = REF.side==='seller'?'X':'';
+  let cm='Engagement: '+(REF.engagement_type==='marketing'?'Marketing Agreement':REF.engagement_type==='oneshot'?'One-Shot':'—');
+  cm+=REF.status==='sold'?('  ·  SOLD '+(REF.sold_at?fmtDate(REF.sold_at):'')):'';
+  if(REF.notes) cm+='\n'+REF.notes;
+  $('c_comments').textContent=cm;
+  $('genstamp').textContent='Generated '+fmtDate(new Date().toISOString());
+}
+
+$('save').onclick=async ()=>{
+  const patch={
+    receiving_broker_name:$('rb_name').value.trim()||null,
+    receiving_broker_company:$('rb_co').value.trim()||null,
+    side:$('side').value||null,
+    referral_pct:Number($('pct').value)||20
+  };
+  $('save').disabled=true; $('msg').textContent='Saving…';
+  const {error}=await sb.from('mandate_referrals').update(patch).eq('mandate_firm_id',FIRMID);
+  $('save').disabled=false;
+  if(error){ $('msg').textContent='Save failed: '+error.message; return; }
+  Object.assign(REF,patch); render(); $('msg').textContent='Saved.';
+};
+$('print').onclick=()=>window.print();
+boot();
+</script>
+</body>
+</html>
