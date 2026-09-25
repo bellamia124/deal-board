@@ -310,7 +310,7 @@ function sigBlock(email){var e=String(email||'').toLowerCase();
 var STZ={AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",DC:"Washington, D.C."};
 function stateName(f){var c=String((f&&f.state)||"").toUpperCase().trim();return STZ[c]||"";}
 function mkt(f){var s=stateName(f);return s?("here in "+s):"in your market";}
-var IDENT={jasoncurcio:{name:"Jason Curcio",city:"West Palm Beach"},tcurcio:{name:"Tim Curcio",city:"Pasadena"},mnicoletti:{name:"Matt Nicoletti",city:"West Palm Beach"}};
+var IDENT={jasoncurcio:{name:"Jason Curcio",city:"West Palm Beach"},tcurcio:{name:"Tim Curcio",city:"Pasadena"},mnicoletti:{name:"Matt Nicoletti",city:"Vero Beach"}};
 function who(){var e=String((typeof ME!=="undefined"&&ME&&ME.email)||"").toLowerCase();for(var k in IDENT){if(e.indexOf(k)>=0)return IDENT[k];}return IDENT.jasoncurcio;}
 // Standpoint A — equity group acquisition (buyer is NEVER named)
 function emailA(f){const F=firstName(f),C=coName(f);return {
